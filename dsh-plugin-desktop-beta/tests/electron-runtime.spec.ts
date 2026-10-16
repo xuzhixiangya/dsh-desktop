@@ -517,9 +517,7 @@ describe('Electron desktop runtime', () => {
     })
     expect(electron.templateIcon.setTemplateImage).toHaveBeenCalledWith(true)
     expect(electron.trays[0]?.image).toBe(electron.templateIcon)
-    expect(electron.menuTemplates[0]).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: 'Mode: Compatibility Mode', enabled: true }),
-    ]))
+    expect(electron.menuTemplates[0]?.some(item => String((item as { label?: string }).label).startsWith('Mode:'))).toBe(false)
 
     const titleListener = electron.browserWindowOn.mock.calls.find(([event]) => event === 'page-title-updated')?.[1]
     expect(titleListener).toEqual(expect.any(Function))
@@ -905,9 +903,7 @@ describe('Electron desktop runtime', () => {
     expect(electron.app.dock.setIcon).not.toHaveBeenCalled()
     expect(electron.Menu.setApplicationMenu).not.toHaveBeenCalled()
     expect(electron.browserWindows[0]?.removeMenu).not.toHaveBeenCalled()
-    expect(electron.menuTemplates[0]).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: 'Mode: Compatibility Mode', enabled: false }),
-    ]))
+    expect(electron.menuTemplates[0]?.some(item => String((item as { label?: string }).label).startsWith('Mode:'))).toBe(false)
 
     await release()
   })
@@ -1493,7 +1489,6 @@ describe('Electron desktop runtime', () => {
     expect((electron.menuTemplates.at(-1) as Array<{ label?: string }>).map(item => item.label))
       .toEqual(expect.arrayContaining([
         '打开 DSH Desktop',
-        '模式：兼容模式',
         '退出',
       ]))
 
@@ -1502,7 +1497,6 @@ describe('Electron desktop runtime', () => {
     expect((electron.menuTemplates.at(-1) as Array<{ label?: string }>).map(item => item.label))
       .toEqual(expect.arrayContaining([
         'Open DSH Desktop',
-        'Mode: Compatibility Mode',
         'Quit',
       ]))
 
@@ -1512,7 +1506,6 @@ describe('Electron desktop runtime', () => {
     expect((electron.menuTemplates.at(-1) as Array<{ label?: string }>).map(item => item.label))
       .toEqual(expect.arrayContaining([
         '打开 DSH Desktop',
-        '模式：兼容模式',
         '退出',
       ]))
 
@@ -2041,7 +2034,7 @@ describe('Electron desktop runtime', () => {
       ['compatibility', 'en'], ['compatibility', 'zh'],
       ['extended', 'en'], ['extended', 'zh'],
       ['advanced', 'en'], ['advanced', 'zh'],
-    ].filter(([mode]) => platform !== 'linux' || mode === 'compatibility') as Array<['compatibility' | 'extended' | 'advanced', 'en' | 'zh']>)('lists all modes with %s selected (%s)', async (mode, locale) => {
+    ].filter(([mode]) => platform !== 'linux' || mode === 'compatibility') as Array<['compatibility' | 'extended' | 'advanced', 'en' | 'zh']>)('hides window modes while the choice is closed (%s, %s)', async (mode, locale) => {
       vi.spyOn(process, 'platform', 'get').mockReturnValue(platform)
       const { ElectronDesktopRuntime } = await import('../src/electron-runtime.ts')
       const requestModeChange = vi.fn(async () => {})
@@ -2049,34 +2042,14 @@ describe('Electron desktop runtime', () => {
       const release = runtime.schedule({ ...spec, mode, requestModeChange, readLocalePreference: () => locale })
       await runtime.mountScheduled()
 
-      const modes = ['compatibility', 'extended', 'advanced'] as const
-      const labels = locale === 'zh' ? ['兼容模式', '扩展窗口', '增强模式'] : ['Compatibility Mode', 'Extended Window', 'Enhanced Mode']
-      const title = locale === 'zh' ? `模式：${labels[modes.indexOf(mode)]}` : `Mode: ${labels[modes.indexOf(mode)]}`
-      type Item = { label?: string, type?: string, checked?: boolean, enabled?: boolean, click?: () => void, submenu?: Item[] }
+      const labels = locale === 'zh'
+        ? ['兼容模式', '扩展窗口', '增强模式', '模式：兼容模式', '模式：扩展窗口', '模式：增强模式']
+        : ['Compatibility Mode', 'Extended Window', 'Enhanced Mode', 'Mode: Compatibility Mode', 'Mode: Extended Window', 'Mode: Enhanced Mode']
+      type Item = { label?: string, submenu?: Item[] }
       const menu = electron.menuTemplates.at(-1) as Item[]
-      const selectors = menu.filter(item => item.label === title)
-      expect(selectors).toHaveLength(1)
-      expect(selectors[0]?.enabled).toBe(platform !== 'linux')
-      expect(selectors[0]?.click).toBeUndefined()
-      const submenu = selectors[0]?.submenu
-      expect(submenu).toHaveLength(3)
-      expect(submenu?.map(item => item.label)).toEqual(labels)
-      expect(menu.some(item => labels.includes(item.label ?? ''))).toBe(false)
-      expect(submenu?.filter(item => item.checked)).toHaveLength(1)
-
-      for (const [index, target] of modes.entries()) {
-        const item = submenu?.[index]
-        expect(item).toEqual(expect.objectContaining({
-          type: 'radio', checked: target === mode, enabled: platform !== 'linux',
-        }))
-        requestModeChange.mockClear()
-        item?.click?.()
-        if (target === mode || platform === 'linux') {
-          expect(requestModeChange).not.toHaveBeenCalled()
-        } else {
-          await vi.waitFor(() => { expect(requestModeChange).toHaveBeenCalledExactlyOnceWith(target) })
-        }
-      }
+      const listed = menu.flatMap(item => [item.label, ...(item.submenu?.map(child => child.label) ?? [])])
+      expect(listed.some(label => labels.includes(label ?? ''))).toBe(false)
+      expect(requestModeChange).not.toHaveBeenCalled()
       await release()
     })
   })
@@ -2114,7 +2087,6 @@ describe('Electron desktop runtime', () => {
       'Open DSH Desktop', 'Reload Interface', undefined,
       'Earlier Tool', 'Later Tool', undefined,
       'Check for Updates…', undefined,
-      'Mode: Compatibility Mode', undefined,
       'Quit',
     ])
     expect(electron.menuTemplates.at(-1)).toEqual(expect.arrayContaining([
@@ -2926,9 +2898,7 @@ describe('Electron desktop runtime', () => {
       transparent: true,
       vibrancy: 'sidebar',
     }))
-    expect(electron.menuTemplates[0]).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: 'Mode: Enhanced Mode', enabled: true }),
-    ]))
+    expect(electron.menuTemplates[0]?.some(item => String((item as { label?: string }).label).startsWith('Mode:'))).toBe(false)
 
     runtime.setThemeSource('system')
     expect(electron.nativeTheme.themeSource).toBe('system')
@@ -2959,9 +2929,7 @@ describe('Electron desktop runtime', () => {
     expect(electron.contentViews).toHaveLength(2)
     expect(electron.browserWindowOptions[0]).not.toHaveProperty('transparent')
     expect(electron.browserWindowOptions[0]).not.toHaveProperty('backgroundMaterial')
-    expect(electron.menuTemplates[0]).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: 'Mode: Extended Window', enabled: true }),
-    ]))
+    expect(electron.menuTemplates[0]?.some(item => String((item as { label?: string }).label).startsWith('Mode:'))).toBe(false)
 
     await release()
   })

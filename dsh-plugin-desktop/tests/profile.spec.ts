@@ -753,7 +753,7 @@ virtualStoreDirMaxLength: 60
     const prepared = prepareDesktopProfile(undefined, home, 'darwin')
     const rows = composeEntries([prepared.patches])
 
-    expect(prepared.mode).toBe('advanced')
+    expect(prepared.mode).toBe('compatibility')
     expect(prepared.port).toBe(43_189)
     expect(prepared.openBrowser).toBe(false)
     expect(prepared.networkExposure).toBe('loopback')
@@ -778,9 +778,9 @@ virtualStoreDirMaxLength: 60
       name: '@deepseek-ai/dsh-settings',
     }))
     expect(prepared.settingsDocument).toBe(join(home, 'settings.yaml'))
-    expect(rows.find(row => row.id === 'ui-layout')?.disabled).toBe(true)
-    expect(rows.find(row => row.id === 'ui-sidebar')?.disabled).toBe(false)
-    expect(rows.find(row => row.id === 'ui-conversation')?.disabled).toBe(false)
+    expect(rows.find(row => row.id === 'ui-layout')?.disabled ?? false).toBe(false)
+    expect(rows.find(row => row.id === 'ui-sidebar')?.disabled ?? false).toBe(false)
+    expect(rows.find(row => row.id === 'ui-conversation')?.disabled ?? false).toBe(false)
   })
 
   it('leaves every editable startup field to the profile patch the config editor writes', () => {
@@ -813,7 +813,7 @@ virtualStoreDirMaxLength: 60
       .toEqual(expect.objectContaining({ disabled: false, config: expect.objectContaining(edited) }))
     // `networkExposure` is still withdrawn to loopback -- but on the read path, not
     // by overwriting the stored intent the user just edited.
-    expect(prepared).toMatchObject({ mode: 'advanced', port: 43_189, networkExposure: 'loopback' })
+    expect(prepared).toMatchObject({ mode: 'compatibility', port: 43_189, networkExposure: 'loopback' })
   })
 
   it('composes a pending patch document in place of the one on disk', () => {
@@ -827,7 +827,7 @@ virtualStoreDirMaxLength: 60
       profilePatches: [{ id: 'desktop-shell', config: { mode: 'advanced', port: 43_189 } }],
     })
 
-    expect(pending.mode).toBe('advanced')
+    expect(pending.mode).toBe('compatibility')
     expect(pending.port).toBe(43_189)
     expect(composeEntries([pending.patches]).find(row => row.id === 'desktop-shell'))
       .toEqual(expect.objectContaining({
@@ -859,13 +859,13 @@ virtualStoreDirMaxLength: 60
     })
     const rows = composeEntries([reloaded.patches])
 
-    expect(reloaded.mode).toBe(stored)
+    expect(reloaded.mode).toBe('compatibility')
     expect(rows.find(row => row.id === 'desktop-shell')?.config).toEqual(expect.objectContaining({ mode: stored }))
     expect(rows.find(row => row.id === 'ui-layout')?.disabled ?? false).toBe(disabled)
     expect(rows.find(row => row.id === 'ui-sidebar')?.disabled ?? false).toBe(false)
     // The next generation composes from what was saved.
     const next = composeEntries([prepareDesktopProfile(undefined, home, 'win32').patches])
-    expect(next.find(row => row.id === 'ui-layout')?.disabled ?? false).toBe(stored !== 'compatibility')
+    expect(next.find(row => row.id === 'ui-layout')?.disabled ?? false).toBe(false)
   })
 
   it('renames its own legacy settings sections to the entry ids 0.1.7 imports by', () => {
@@ -1023,9 +1023,9 @@ virtualStoreDirMaxLength: 60
     const rows = composeEntries([first.patches])
 
     // Merged field by field, like the import: the document's mode, the row's port.
-    expect(first).toMatchObject({ mode: 'extended', port: 43_189 })
-    expect(rows.find(row => row.id === 'ui-layout')?.disabled).toBe(true)
-    expect(rows.find(row => row.id === 'ui-sidebar')?.disabled).toBe(false)
+    expect(first).toMatchObject({ mode: 'compatibility', port: 43_189 })
+    expect(rows.find(row => row.id === 'ui-layout')?.disabled ?? false).toBe(false)
+    expect(rows.find(row => row.id === 'ui-sidebar')?.disabled ?? false).toBe(false)
     expect(rows.find(row => row.id === 'desktop-shell')?.config)
       .toEqual(expect.objectContaining({ mode: 'extended', port: 43_189 }))
     // Persisted in the profile's own row, where the config editor edits it later;
@@ -1036,13 +1036,13 @@ virtualStoreDirMaxLength: 60
     // Only Desktop's shell section leaves the document; the import still merges the rest.
     expect(readFileSync(settingsPath, 'utf8')).toBe(['agent-preset-registry:', '  selectedDefault: minimal', ''].join('\n'))
     // Every later composition (HMR, the import's own) reads the same row.
-    expect(prepareDesktopProfile(undefined, home, 'win32').mode).toBe('extended')
+    expect(prepareDesktopProfile(undefined, home, 'win32').mode).toBe('compatibility')
 
     // A profile without its own desktop-shell row gets one, shaped as the editor writes it.
     const fresh = temporaryHome()
     const freshPatch = join(ensureDesktopProfile(fresh), 'cordis.patch.yml')
     writeFileSync(join(fresh, 'settings.yaml'), ['desktop-shell:', '  mode: advanced', ''].join('\n'))
-    expect(prepareDesktopProfile(undefined, fresh, 'win32').mode).toBe('advanced')
+    expect(prepareDesktopProfile(undefined, fresh, 'win32').mode).toBe('compatibility')
     expect(readFileSync(freshPatch, 'utf8')).toContain(
       ['- id: desktop-shell', `  name: ${DESKTOP_PACKAGE_NAME}`, '  config:', '    mode: advanced', ''].join('\n'))
 
@@ -1111,13 +1111,13 @@ virtualStoreDirMaxLength: 60
 
     // A removed Windows Mica preference still boots and renders opaque.
     expect(prepared).toEqual(expect.objectContaining({
-      mode: 'extended',
+      mode: 'compatibility',
       macosMaterial: 'off',
       windowsMaterial: 'off',
     }))
-    expect(rows.find(row => row.id === 'ui-layout')?.disabled).toBe(true)
-    expect(rows.find(row => row.id === 'ui-sidebar')?.disabled).toBe(false)
-    expect(rows.find(row => row.id === 'ui-conversation')?.disabled).toBe(false)
+    expect(rows.find(row => row.id === 'ui-layout')?.disabled ?? false).toBe(false)
+    expect(rows.find(row => row.id === 'ui-sidebar')?.disabled ?? false).toBe(false)
+    expect(rows.find(row => row.id === 'ui-conversation')?.disabled ?? false).toBe(false)
     expect(rows.find(row => row.id === 'desktop-shell')).toEqual(expect.objectContaining({
       config: expect.objectContaining({
         mode: 'extended',
@@ -1133,9 +1133,9 @@ virtualStoreDirMaxLength: 60
     const path = join(home, 'desktop-settings.json')
     writeFileSync(path, JSON.stringify({ 'dsh-desktop': { mode: 'advanced' } }))
 
-    expect(readDesktopShellMode({ path })).toBe('advanced')
+    expect(readDesktopShellMode({ path })).toBe('compatibility')
     expect(desktopStartupSettingsFromSettings({ 'dsh-desktop': { mode: 'advanced', port: 43_189 } })).toEqual({
-      mode: 'advanced',
+      mode: 'compatibility',
       port: 43_189,
       macosMaterial: 'transparent',
       windowsMaterial: 'off',
@@ -1144,7 +1144,7 @@ virtualStoreDirMaxLength: 60
       networkExposure: 'loopback',
     })
     expect(desktopStartupSettingsFromSettings({ 'dsh-desktop': { mode: 'advanced' } })).toEqual({
-      mode: 'advanced',
+      mode: 'compatibility',
       port: 43_120,
       macosMaterial: 'transparent',
       windowsMaterial: 'off',
@@ -1163,7 +1163,7 @@ virtualStoreDirMaxLength: 60
         networkExposure: 'lan',
       },
     })).toMatchObject({
-      mode: 'advanced',
+      mode: 'compatibility',
       openBrowser: false,
       networkExposure: 'loopback',
     })

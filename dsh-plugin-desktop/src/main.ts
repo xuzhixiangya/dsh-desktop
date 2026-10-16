@@ -1517,9 +1517,11 @@ async function start(): Promise<void> {
           await completeOrSkipDesktopSetupWizard(marketUserDataDir, prepared.profile.dir,
             selection === undefined ? 'skipped' : 'completed', setupWizardVersions)
           setupPending = false
-          // Keep the current renderer/Host alive for official login and onboarding.
-          // Preferences are applied on the next launch, requested explicitly afterwards.
-          setupRestartPending = selection !== undefined
+          // Shell choices are already in the live profile. Login continues in
+          // this same window; a restart prompt here only blocks the account
+          // the employee just saved. Market and remote-control choices apply
+          // the next time the app is opened.
+          setupRestartPending = false
         } finally { setupSaving = false }
       },
     }
@@ -1969,7 +1971,7 @@ async function start(): Promise<void> {
 }
 
 async function run(): Promise<void> {
-  // productName still names the existing data folder. The menu uses the company name.
+  // Window state and logs live in the company user-data directory. The menu uses the display name.
   app.setPath('userData', defaultDesktopUserDataDirectory())
   app.setName(DESKTOP_DISPLAY_NAME)
   if (process.argv.includes('--export-diagnostics')) {

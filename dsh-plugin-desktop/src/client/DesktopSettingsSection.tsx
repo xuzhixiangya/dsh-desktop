@@ -15,6 +15,7 @@ import {
   desktopBrowserAccessAvailable,
   desktopBrowserAccessEnabled,
 } from '../desktop-network.ts'
+import { DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED } from '../window-mode-availability.ts'
 
 /** Browser view of the Host `dsh-desktop` settings namespace. */
 export interface DesktopShellSettings {
@@ -725,13 +726,13 @@ export function DesktopSettingsSection({
       </>}
 
       {/* Window modes, or macOS's material choice; with neither the group would be empty. */}
-      {(capabilities?.windowModes !== false || platform === 'darwin') && <section className="dshDesktopSettingsGroup" aria-labelledby="dsh-desktop-presentation-title">
+      {((DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED && capabilities?.windowModes !== false) || platform === 'darwin') && <section className="dshDesktopSettingsGroup" aria-labelledby="dsh-desktop-presentation-title">
         <div>
-          <h3 id="dsh-desktop-presentation-title">{t('presentationTitle')}</h3>
-          <p className="dshDesktopSettingsGroupIntro">{t('presentationIntro')}</p>
+          <h3 id="dsh-desktop-presentation-title">{DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED && capabilities?.windowModes !== false ? t('presentationTitle') : t('windowMaterial')}</h3>
+          {(DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED && capabilities?.windowModes !== false) && <p className="dshDesktopSettingsGroupIntro">{t('presentationIntro')}</p>}
         </div>
         {desktop.status === 'unavailable' && <p className="dshDesktopSettingsNotice">{t('readOnly')}</p>}
-        {capabilities?.windowModes !== false && <div className="dshDesktopSettingsList" role="radiogroup" aria-labelledby="dsh-desktop-presentation-title">
+        {DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED && capabilities?.windowModes !== false && <div className="dshDesktopSettingsList" role="radiogroup" aria-labelledby="dsh-desktop-presentation-title">
           <Choice
             title={t('compatibilityMode')}
             body={t('compatibilityModeBody')}

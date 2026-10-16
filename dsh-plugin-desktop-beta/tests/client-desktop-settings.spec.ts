@@ -540,6 +540,9 @@ describe('Desktop native action presentation', () => {
     expect(markup).toContain('Silverstar')
     expect(markup).not.toContain('2.0.3')
     expect(markup).not.toContain('dshDesktopFrameVersion')
+    expect(markup).not.toContain('Extended mode')
+    expect(markup).not.toContain('Switch window mode')
+    expect(markup).not.toContain('dshDesktopModePopover')
   })
 
   it('renders the active presentation pill through a shadcn hover-card trigger', () => {

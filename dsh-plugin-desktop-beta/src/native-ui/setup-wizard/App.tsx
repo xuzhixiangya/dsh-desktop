@@ -18,6 +18,10 @@ import {
   type DesktopSetupWizardSelection,
 } from '../../setup-wizard-contract.ts'
 import { desktopSetupWizardCopy, type DesktopSetupWizardCopy } from '../../setup-wizard-copy.ts'
+import {
+  DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED,
+  presentedDesktopShellMode,
+} from '../../window-mode-availability.ts'
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert.tsx'
 import { Badge } from '../components/ui/badge.tsx'
 import { Button } from '../components/ui/button.tsx'
@@ -79,6 +83,24 @@ export function nextDesktopSetupWizardStep(
     : undefined
 }
 
+/** Steps the current release actually shows. The mode page stays in the full list. */
+function offeredDesktopSetupWizardSteps(): readonly DesktopSetupWizardStep[] {
+  return DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED
+    ? DESKTOP_SETUP_WIZARD_STEPS
+    : DESKTOP_SETUP_WIZARD_STEPS.filter(step => step !== 'mode')
+}
+
+function adjacentOfferedDesktopSetupWizardStep(
+  step: DesktopSetupWizardStep,
+  direction: -1 | 1,
+): DesktopSetupWizardStep | undefined {
+  const steps = offeredDesktopSetupWizardSteps()
+  const index = steps.indexOf(step)
+  if (index < 0) return undefined
+  const next = steps[index + direction]
+  return next
+}
+
 function localLocale(search: string): Locale {
   return new URLSearchParams(search).get('locale') === 'zh' ? 'zh' : 'en'
 }
@@ -120,8 +142,11 @@ export function decodeDesktopSetupWizardInput(search: string): DesktopSetupWizar
 }
 
 function normalizedSelection(input: DesktopSetupWizardInput): DesktopSetupWizardSelection {
-  const mode = input.platform === 'linux' ? 'compatibility' : input.mode
-  const browserAccess = mode === 'compatibility' && (input.openBrowser || input.networkExposure === 'lan')
+  const storedMode = input.platform === 'linux' ? 'compatibility' : input.mode
+  const mode = presentedDesktopShellMode(storedMode)
+  // Presenting compatibility does not turn browser access on for a profile that
+  // was not already using the compatibility client.
+  const browserAccess = storedMode === 'compatibility' && (input.openBrowser || input.networkExposure === 'lan')
   return {
     mode,
     macosMaterial: input.macosMaterial,
@@ -137,7 +162,7 @@ function normalizedSelection(input: DesktopSetupWizardInput): DesktopSetupWizard
 function finish(selection: DesktopSetupWizardSelection): void {
   const browserAccess = selection.mode === 'compatibility' && selection.openBrowser
   const url = new URL(`${SCHEME}//complete`)
-  url.searchParams.set('mode', selection.mode)
+  url.searchParams.set('mode', presentedDesktopShellMode(selection.mode))
   url.searchParams.set('macosMaterial', selection.macosMaterial)
   url.searchParams.set('windowsMaterial', selection.windowsMaterial)
   url.searchParams.set('openBrowser', String(browserAccess))
@@ -254,7 +279,7 @@ function ModeOptions({
     { value: 'compatibility', title: copy.compatibilityMode, body: copy.compatibilityModeBody },
     { value: 'extended', title: copy.extendedMode, body: input.platform === 'linux' ? copy.unavailableOnLinux : copy.extendedModeBody },
     { value: 'advanced', title: copy.advancedMode, body: input.platform === 'linux' ? copy.unavailableOnLinux : copy.advancedModeBody },
-  ]
+  ].filter((option): option is { readonly value: DesktopSetupWizardMode; readonly title: string; readonly body: string } => DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED || option.value === 'compatibility')
   return <RadioGroup
     aria-label={copy.presentationTitle}
     aria-orientation="vertical"
@@ -750,7 +775,7 @@ export function SetupWizardApp({ embedded }: { embedded?: EmbeddedSetupWizard } 
   }
 
   const advance = (): void => {
-    const next = nextDesktopSetupWizardStep(step)
+    const next = adjacentOfferedDesktopSetupWizardStep(step, 1)
     if (next === undefined) return
     if (step === 'browser' && desktopSetupWizardRequiresLanAcknowledgement(
       selection.networkExposure,
@@ -776,14 +801,15 @@ export function SetupWizardApp({ embedded }: { embedded?: EmbeddedSetupWizard } 
   }
 
   const back = (): void => {
-    const previous = previousDesktopSetupWizardStep(step)
+    const previous = adjacentOfferedDesktopSetupWizardStep(step, -1)
     if (previous !== undefined) setStep(previous)
   }
-  const stepIndex = DESKTOP_SETUP_WIZARD_STEPS.indexOf(step)
+  const offeredSteps = offeredDesktopSetupWizardSteps()
+  const stepIndex = Math.max(0, offeredSteps.indexOf(step))
   return <>{embedded ? null : <DesktopFrame />}<div ref={wizard} className={embedded ? 'dshSetupWizard' : undefined} lang={locale}>
   {embedded && <header className="dshSetupProgress">
-    <ol aria-label={locale === 'zh' ? '引导进度' : 'Setup progress'}>{DESKTOP_SETUP_WIZARD_STEPS.map((item, index) => <li key={item} aria-current={item === step ? 'step' : undefined}><span className="sr-only">{index + 1}</span></li>)}</ol>
-    <span>{stepIndex + 1} / {DESKTOP_SETUP_WIZARD_STEPS.length}</span>
+    <ol aria-label={locale === 'zh' ? '引导进度' : 'Setup progress'}>{offeredSteps.map((item, index) => <li key={item} aria-current={item === step ? 'step' : undefined}><span className="sr-only">{index + 1}</span></li>)}</ol>
+    <span>{stepIndex + 1} / {offeredSteps.length}</span>
   </header>}
   <main className={`dshNativeContent ${embedded ? 'dshSetupMain' : 'h-screen overflow-hidden p-5 sm:p-6'}`} aria-busy={busy}><fieldset disabled={busy} className={embedded ? 'dshSetupFieldset' : 'mx-auto flex h-full w-full max-w-3xl flex-col border-0 p-0'}>
     {failure && <Alert variant="destructive"><AlertDescription>{failure}</AlertDescription></Alert>}
@@ -793,7 +819,10 @@ export function SetupWizardApp({ embedded }: { embedded?: EmbeddedSetupWizard } 
           embedded={Boolean(embedded)}
           copy={copy}
           onSkip={skip}
-          onStart={() => { setStep('mode') }}
+          onStart={() => {
+            const next = adjacentOfferedDesktopSetupWizardStep('welcome', 1)
+            if (next !== undefined) setStep(next)
+          }}
           profileName={input.profileName}
         />
         : step === 'success'
@@ -803,10 +832,7 @@ export function SetupWizardApp({ embedded }: { embedded?: EmbeddedSetupWizard } 
     </div>
     {!embedded && <SetupWizardNavigation
       copy={copy}
-      onBack={() => {
-        const previous = previousDesktopSetupWizardStep(step)
-        if (previous !== undefined) setStep(previous)
-      }}
+      onBack={back}
       onNext={advance}
       onSkip={skip}
       step={step}

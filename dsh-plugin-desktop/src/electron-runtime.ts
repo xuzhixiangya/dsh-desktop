@@ -24,6 +24,7 @@ import { isPlatformLoginDestination, type DesktopPlatformLoginRequest } from './
 import { PLATFORM_LOGIN_TITLE, platformLoginUrl } from './platform-login-window.ts'
 import type { DesktopOpenWorkspaceDelivery } from './launch-workspace-contract.ts'
 import { electronPlatformStrategy, type ElectronPlatformStrategy } from './electron-platform.ts'
+import { DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED } from './window-mode-availability.ts'
 import type {
   DesktopNotification,
   DesktopLocale,
@@ -1072,9 +1073,9 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
     if (tools.length > 0) template.push({ type: 'separator' }, ...tools)
     if (profiles.length > 0) template.push({ type: 'separator' }, ...profiles)
     if (status.length > 0) template.push({ type: 'separator' }, ...status)
-    template.push(
-      { type: 'separator' },
-      {
+    template.push({ type: 'separator' })
+    if (DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED) {
+      template.push({
         label: desktopTrayLabel(this.locale, 'shellMode', desktopTrayLabel(this.locale, spec.mode)),
         enabled: this.platformStrategy.canToggleShellMode,
         submenu: (['compatibility', 'extended', 'advanced'] as const).map(mode => ({
@@ -1084,8 +1085,9 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
           enabled: this.platformStrategy.canToggleShellMode,
           click: () => { changeMode(mode) },
         })),
-      },
-      { type: 'separator' },
+      }, { type: 'separator' })
+    }
+    template.push(
       { label: desktopTrayLabel(this.locale, 'quit'), click: () => { spec.requestQuit(0) } },
     )
     return template

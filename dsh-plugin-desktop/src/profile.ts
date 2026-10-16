@@ -46,6 +46,7 @@ import {
   type DesktopNetworkExposure,
 } from './desktop-network.ts'
 import type { DesktopShellMode } from './runtime.ts'
+import { presentedDesktopShellMode } from './window-mode-availability.ts'
 import {
   DESKTOP_PACKAGE_NAME,
   DESKTOP_PACKAGE_NAMES,
@@ -196,10 +197,13 @@ export function desktopStartupSettingsFromSettings(document: unknown): DesktopSt
     throw new Error(`${BIN_NAME}: ${DESKTOP_SETTINGS_NAMESPACE} settings must be a map`)
   }
   const values = section as Record<string, unknown>
-  const mode = parseDesktopShellMode(values.mode)
+  const storedMode = parseDesktopShellMode(values.mode)
+  // The window boots in the mode users can use. Browser and LAN stay tied to
+  // the stored mode, so a hidden custom mode does not reopen a listener.
+  const mode = presentedDesktopShellMode(storedMode)
   const networkExposure = parseDesktopNetworkExposure(values.networkExposure)
   const openBrowser = desktopBrowserAccessEnabled(
-    mode,
+    storedMode,
     parseDesktopOpenBrowser(values.openBrowser),
     networkExposure,
   )
@@ -1460,7 +1464,7 @@ export function prepareDesktopProfile(
   // persisted form values profile-specific, so the composed desktop-shell row — the
   // bundle default overridden by the profile's own patch layer — is now the source.
   const {
-    mode,
+    mode: storedMode,
     port,
     macosMaterial,
     windowsMaterial,
@@ -1468,6 +1472,9 @@ export function prepareDesktopProfile(
     openBrowser,
     networkExposure,
   } = desktopStartupSettingsFromSettings({ [DESKTOP_SETTINGS_NAMESPACE]: desktopShellConfig })
+  // The profile row keeps the stored mode so a later release can offer it again.
+  // This generation's layout and window follow the mode users can actually use.
+  const mode = presentedDesktopShellMode(storedMode)
   const webRuntime = rows.get('web-runtime')
   if (webRuntime === undefined) {
     throw new Error(`${BIN_NAME}: desktop profile has no web-runtime row`)

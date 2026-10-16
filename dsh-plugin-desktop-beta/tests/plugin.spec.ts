@@ -478,20 +478,16 @@ describe('desktop Host plugin', () => {
     expect(harness.setThemeSource).toHaveBeenCalledWith('dark')
 
     await harness.shell()?.requestModeChange('advanced')
-    expect(harness.update).toHaveBeenCalledWith(DESKTOP_SETTINGS_ENTRY_ID, { mode: 'advanced' })
+    expect(harness.update).not.toHaveBeenCalled()
   })
 
-  it('atomically withdraws browser access when the native tray selects a custom mode', async () => {
+  it('does not persist a custom mode while window mode choices are closed', async () => {
     const harness = createHarness('darwin', true)
     apply(harness.ctx, harness.config)
 
     await harness.shell()?.requestModeChange('advanced')
 
-    expect(harness.update).toHaveBeenCalledWith(DESKTOP_SETTINGS_ENTRY_ID, {
-      mode: 'advanced',
-      openBrowser: false,
-      networkExposure: 'loopback',
-    })
+    expect(harness.update).not.toHaveBeenCalled()
   })
 
   it('forwards same-origin renderer boot reports through the Host route', async () => {
@@ -632,7 +628,7 @@ describe('desktop Host plugin', () => {
     },
   )
 
-  it('requests one orderly restart after the settings form commits another mode', async () => {
+  it('does not restart when a stored mode changes while window mode choices are closed', async () => {
     vi.useFakeTimers()
     const harness = createHarness()
     apply(harness.ctx, harness.config)
@@ -643,7 +639,7 @@ describe('desktop Host plugin', () => {
     harness.restart.mockImplementation(() => new Promise<void>(() => {}))
     await harness.notify({ mode: 'advanced' })
     await vi.runAllTimersAsync()
-    expect(harness.restart).toHaveBeenCalledOnce()
+    expect(harness.restart).not.toHaveBeenCalled()
   })
 
   it('saves first-run Setup through the settings scopes without its own native restart prompt', async () => {
@@ -671,7 +667,7 @@ describe('desktop Host plugin', () => {
     })
 
     expect(harness.update).toHaveBeenCalledWith(DESKTOP_SETTINGS_ENTRY_ID, {
-      mode: 'extended',
+      mode: 'compatibility',
       macosMaterial: 'off',
       windowsMaterial: 'off',
       openBrowser: false,
@@ -680,14 +676,14 @@ describe('desktop Host plugin', () => {
     expect(harness.update).toHaveBeenCalledWith('desktop-notifications', notifications)
 
     // Setup's continuation owns the restart that applies its own choice.
-    await harness.notify({ mode: 'extended', macosMaterial: 'off' })
+    await harness.notify({ mode: 'compatibility', macosMaterial: 'off' })
     await vi.runAllTimersAsync()
     expect(harness.restart).not.toHaveBeenCalled()
 
-    // A later, different choice still asks for its own restart.
-    await harness.notify({ mode: 'advanced' })
+    // Alternate modes are not offered, so a later stored mode does not restart.
+    await harness.notify({ mode: 'advanced', macosMaterial: 'transparent' })
     await vi.runAllTimersAsync()
-    expect(harness.restart).toHaveBeenCalledOnce()
+    expect(harness.restart).not.toHaveBeenCalled()
   })
 
   it('asks again when the user returns to the Setup mode after leaving it', async () => {
@@ -716,15 +712,15 @@ describe('desktop Host plugin', () => {
         notifyOnScheduleFailure: false,
       },
     })).rejects.toThrow('refused')
-    await harness.notify({ mode: 'extended' })
+    await harness.notify({ mode: 'compatibility' })
     await vi.runAllTimersAsync()
     expect(harness.restart).not.toHaveBeenCalled()
 
-    // Back to the running mode, then Setup's mode again from the mode picker.
+    // Alternate modes stay closed, so returning to a stored custom mode does not restart.
     await harness.notify({ mode: 'compatibility' })
     await harness.notify({ mode: 'extended' })
     await vi.runAllTimersAsync()
-    expect(harness.restart).toHaveBeenCalledOnce()
+    expect(harness.restart).not.toHaveBeenCalled()
   })
 
   it('keeps the restart prompt when first-run Setup could not save its choice', async () => {
@@ -753,7 +749,7 @@ describe('desktop Host plugin', () => {
 
     await harness.notify({ mode: 'extended' })
     await vi.runAllTimersAsync()
-    expect(harness.restart).toHaveBeenCalledOnce()
+    expect(harness.restart).not.toHaveBeenCalled()
   })
 
   it('hot-applies browser and LAN access but restarts when a custom mode withdraws them', async () => {
@@ -772,7 +768,7 @@ describe('desktop Host plugin', () => {
     apply(enabledHarness.ctx, enabledHarness.config)
     await enabledHarness.notify({ mode: 'advanced' })
     await vi.runAllTimersAsync()
-    expect(enabledHarness.restart).toHaveBeenCalledOnce()
+    expect(enabledHarness.restart).not.toHaveBeenCalled()
     expect(enabledHarness.browserAccess.ordinaryBrowserEnabled).toBe(false)
     expect(enabledHarness.setLanHttpsEnabled).toHaveBeenLastCalledWith(false)
   })

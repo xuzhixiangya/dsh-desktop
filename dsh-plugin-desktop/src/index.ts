@@ -63,6 +63,10 @@ import {
   type DesktopWindowMaterial,
 } from './window-material.ts'
 import { DESKTOP_DISPLAY_NAME } from './product-identity.ts'
+import {
+  DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED,
+  presentedDesktopShellMode,
+} from './window-mode-availability.ts'
 import { installSystemPromptBrand } from './system-prompt-brand.ts'
 import { watchPlatformLogin, type PlatformLoginAccount } from './platform-login.ts'
 import type { DesktopSetupWizardSettings } from './setup-wizard-settings.ts'
@@ -361,7 +365,7 @@ export function apply(ctx: Context, config: DesktopShellConfig): void {
         setupSettings = undefined
         setupSaved = false
       }
-      if (next.mode === resolved.mode
+      if (presentedDesktopShellMode(next.mode) === resolved.mode
         && next.port === resolved.port
         && next.macosMaterial === resolved.macosMaterial
         && next.linuxMaterial === resolved.linuxMaterial) {
@@ -457,6 +461,7 @@ export function apply(ctx: Context, config: DesktopShellConfig): void {
         }),
         requestQuit: appExit,
         requestModeChange: async mode => {
+          if (!DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED) return
           const current = settings.get()
           const storedBrowserCapability = current.openBrowser || current.networkExposure === 'lan'
           await settings.update(mode !== 'compatibility' && storedBrowserCapability
@@ -464,11 +469,12 @@ export function apply(ctx: Context, config: DesktopShellConfig): void {
             : { mode })
         },
         applySetupSettings: async next => {
-          setupSettings = next
+          const mode = presentedDesktopShellMode(next.mode)
+          setupSettings = { ...next, mode }
           setupSaved = false
           try {
             await settings.update({
-              mode: next.mode,
+              mode,
               macosMaterial: next.macosMaterial,
               windowsMaterial: next.windowsMaterial,
               openBrowser: next.openBrowser,

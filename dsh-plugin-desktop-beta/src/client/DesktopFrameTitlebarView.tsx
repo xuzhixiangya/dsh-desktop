@@ -3,6 +3,7 @@
 import { LayoutTemplate, PanelTop, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { DESKTOP_DISPLAY_NAME } from '../product-identity.ts'
+import { DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED } from '../window-mode-availability.ts'
 import type { DesktopSettingsApi } from './desktop-settings-api.ts'
 import type { DesktopClientEnvironment, DesktopClientMode } from './environment.ts'
 import { DesktopNativeActions } from './DesktopNativeActions.tsx'
@@ -126,12 +127,12 @@ export function DesktopFrameTitlebarView({ api, environment, setMode, t, remoteC
     >
       <div className="dshDesktopFrameIdentity">
         <span className="dshDesktopFrameProduct">{DESKTOP_DISPLAY_NAME}</span>
-        <DesktopModeControl
+        {DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED && <DesktopModeControl
           mode={environment.mode}
           setMode={setMode}
           restart={api.restart}
           t={t}
-        />
+        />}
       </div>
       <div className="dshDesktopFrameActions">
         {remoteControl && <button type="button" className="dshDesktopFrameMode dshDesktopRemoteControl" onClick={() => { void remoteControl.open().catch(() => {}) }}>

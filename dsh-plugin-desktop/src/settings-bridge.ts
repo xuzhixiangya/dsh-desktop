@@ -35,6 +35,7 @@ import {
   type DesktopNetworkExposure,
 } from './desktop-network.ts'
 import { DESKTOP_PACKAGE_NAME } from './product-identity.ts'
+import { presentedDesktopShellMode } from './window-mode-availability.ts'
 import type { DesktopProfilePreferences } from './profile-preferences.ts'
 import { desktopProfilePreferencesFromSettings } from './profile-preferences.ts'
 import type { DesktopShellMode } from './runtime.ts'
@@ -189,15 +190,18 @@ export interface ResolvedDesktopConfig {
  * @returns the plain startup configuration.
  */
 export function resolveDesktopConfig(config: DesktopShellConfig): ResolvedDesktopConfig {
-  const mode = config.mode.get()
+  const storedMode = config.mode.get()
+  const mode = presentedDesktopShellMode(storedMode)
   const storedNetworkExposure = config.networkExposure.get()
   // LAN exposure is stored intent; it only takes effect while browser access is
   // actually available. `src/profile.ts` applies the same withdrawal before it
   // hands the launcher's WebServer its host, and `src/index.ts` asserts the two
   // agree -- so this rule has to live wherever the row is read, not in a patch
   // that would shadow the user's own edit to these fields.
+  // Browser access follows the stored mode. Presenting compatibility must not
+  // reopen a listener that a hidden custom mode had withdrawn.
   const browserAccess = desktopBrowserAccessEnabled(
-    mode,
+    storedMode,
     config.openBrowser.get(),
     storedNetworkExposure,
   )
