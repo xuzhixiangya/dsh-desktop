@@ -60,7 +60,13 @@ describe('company default plugins', () => {
       'git+https://gh-proxy.com/https://github.com/Imzl-zl/dsh-mcp-manager-ui.git',
     )
     expect(mirrorGithubInstallSpec('dsh-pet@0.3.7')).toBe('dsh-pet@0.3.7')
-    expect(COMPANY_DEFAULT_PLUGINS.find(plugin => plugin.name === 'dsh-pet')?.enabled).toBe(false)
+    expect(COMPANY_DEFAULT_PLUGINS.map(plugin => [plugin.name, plugin.spec, plugin.enabled])).toEqual([
+      ['dsh-better-sidebar', 'dsh-better-sidebar@0.26.0', true],
+      ['billion-context', 'billion-context@0.1.197', true],
+      ['@xmanrui/dsh-im', '@xmanrui/dsh-im@4.39.0', true],
+      ['dsh-pet', 'dsh-pet@0.3.7', false],
+      ['dsh-univer-office', 'dsh-univer-office@0.3.7', true],
+    ])
   })
 
   it('installs missing plugins, leaves the pet turned off, and does not install them again', async () => {

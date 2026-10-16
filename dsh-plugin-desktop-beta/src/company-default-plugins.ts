@@ -32,11 +32,9 @@ export interface CompanyDefaultPlugin {
 export const COMPANY_DEFAULT_PLUGINS: readonly CompanyDefaultPlugin[] = Object.freeze([
   Object.freeze({ name: 'dsh-better-sidebar', spec: 'dsh-better-sidebar@0.26.0', enabled: true }),
   Object.freeze({ name: 'billion-context', spec: 'billion-context@0.1.197', enabled: true }),
-  Object.freeze({ name: '@dsh-external/dsh-deep-research', spec: 'github:xuzhixiangya/dsh-deep-research', enabled: true }),
-  Object.freeze({ name: '@dickpy/dsh-imagegen', spec: '@dickpy/dsh-imagegen@1.6.9', enabled: true }),
-  Object.freeze({ name: 'dsh-toolbox-ui', spec: 'git+https://github.com/Imzl-zl/dsh-mcp-manager-ui.git', enabled: true }),
-  Object.freeze({ name: '@linxin666/dsh-client-ui-task-board', spec: '@linxin666/dsh-client-ui-task-board@0.4.6', enabled: true }),
+  Object.freeze({ name: '@xmanrui/dsh-im', spec: '@xmanrui/dsh-im@4.39.0', enabled: true }),
   Object.freeze({ name: 'dsh-pet', spec: 'dsh-pet@0.3.7', enabled: false }),
+  Object.freeze({ name: 'dsh-univer-office', spec: 'dsh-univer-office@0.3.7', enabled: true }),
 ])
 
 type SeedStatus = 'present' | 'installed' | 'failed'

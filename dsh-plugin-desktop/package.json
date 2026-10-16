@@ -16,8 +16,8 @@
   "main": "lib/main.js",
   "types": "lib/types/index.d.ts",
   "bin": {
-    "yx-desktop": "lib/bin.js",
-    "dsh-plugin-desktop": "lib/bin.js"
+    "dsh-plugin-desktop": "lib/bin.js",
+    "yx-desktop": "lib/bin.js"
   },
   "exports": {
     ".": {
@@ -113,7 +113,13 @@
     },
     "bundle": {
       "patch": "./cordis.patch.yml"
-    }
+    },
+    "optionalBundles": [
+      "dsh-skill-mcp",
+      "@linxin666/dsh-client-ui-task-board",
+      "@dsh-external/dsh-deep-research",
+      "@dickpy/dsh-imagegen"
+    ]
   },
   "scripts": {
     "build": "node scripts/clean.mjs && tsdown && vite build --config vite.client.config.ts && vite build --config vite.native-ui.config.ts && tsc -p tsconfig.json --emitDeclarationOnly && tsc -p tsconfig.client.json --emitDeclarationOnly",
@@ -312,8 +318,12 @@
     "@deepseek-ai/dsh-workflow": "0.2.0-rc.2",
     "@deepseek-ai/dsh-workspace": "0.2.0-rc.2",
     "@deepseek-ai/schemastery": "^3.18.4",
+    "@dickpy/dsh-imagegen": "1.6.9",
+    "@dsh-external/dsh-deep-research": "0.1.1",
+    "@linxin666/dsh-client-ui-task-board": "0.4.6",
     "adm-zip": "^0.6.0",
     "dsh-community-market": "0.1.0-dev.0",
+    "dsh-skill-mcp": "1.7.2",
     "dshmarket": "1.66.21",
     "fs-ext": "2.1.1",
     "koffi": "3.1.5",

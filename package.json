@@ -12,7 +12,11 @@
     "dsh-plugin-desktop-beta",
     "dsh-desktop-next",
     "dsh-community-fabric",
-    "dsh-community-market"
+    "dsh-community-market",
+    "dsh-skill-mcp",
+    "dsh-task-board",
+    "dsh-deep-research",
+    "dsh-imagegen"
   ],
   "resolutions": {
     "@agents-anywhere/dsh-bridge-next": "patch:@agents-anywhere/dsh-bridge-next@file%3Avendor/agents-anywhere/agents-anywhere-dsh-bridge-next-2.1.0-desktop.cbc436f30c61e.r49b34c10.tgz#./patches/agents-anywhere-connector-httpx.patch",

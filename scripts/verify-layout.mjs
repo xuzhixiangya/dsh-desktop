@@ -19,6 +19,10 @@ const nextDesktop = readJson('dsh-desktop-next/package.json')
 const nextReference = readJson('dsh-desktop-next/upstream-reference.json')
 const fabric = readJson('dsh-community-fabric/package.json')
 const market = readJson('dsh-community-market/package.json')
+const toolbox = readJson('dsh-skill-mcp/package.json')
+const taskBoard = readJson('dsh-task-board/package.json')
+const deepResearch = readJson('dsh-deep-research/package.json')
+const imagegen = readJson('dsh-imagegen/package.json')
 const upstreamPackage = readJson('deepseek-harness/package.json')
 
 if (stablePlugin.name !== 'dsh-plugin-desktop') fail('the stable Desktop workspace must retain dsh-plugin-desktop')
@@ -36,8 +40,12 @@ if (JSON.stringify(workspace.workspaces) !== JSON.stringify([
   'dsh-desktop-next',
   'dsh-community-fabric',
   'dsh-community-market',
+  'dsh-skill-mcp',
+  'dsh-task-board',
+  'dsh-deep-research',
+  'dsh-imagegen',
 ])) {
-  fail('the root Yarn workspace must contain the desktop, community-fabric, and community-market packages')
+  fail('the root Yarn workspace must contain the desktop, community, Skill/MCP, task board, deep research, and image packages')
 }
 for (const [name, manifest] of [
   ['dsh-plugin-desktop', stablePlugin],
@@ -45,11 +53,19 @@ for (const [name, manifest] of [
   ['dsh-desktop-next', nextDesktop],
   ['dsh-community-fabric', fabric],
   ['dsh-community-market', market],
+  ['dsh-skill-mcp', toolbox],
+  ['dsh-task-board', taskBoard],
+  ['dsh-deep-research', deepResearch],
+  ['dsh-imagegen', imagegen],
 ]) {
   if (manifest.packageManager !== undefined) fail(`${name} must inherit the root Yarn release`)
 }
 if (fabric.name !== 'dsh-community-fabric') fail('the Fabric workspace must own dsh-community-fabric')
 if (market.name !== 'dsh-community-market') fail('the market workspace must own dsh-community-market')
+if (toolbox.name !== 'dsh-skill-mcp') fail('the Skill/MCP workspace must own dsh-skill-mcp')
+if (taskBoard.name !== '@linxin666/dsh-client-ui-task-board') fail('the task board workspace must own @linxin666/dsh-client-ui-task-board')
+if (deepResearch.name !== '@dsh-external/dsh-deep-research') fail('the deep research workspace must own @dsh-external/dsh-deep-research')
+if (imagegen.name !== '@dickpy/dsh-imagegen') fail('the image workspace must own @dickpy/dsh-imagegen')
 const claudePath = resolve(root, 'CLAUDE.md')
 const claudeStat = lstatSync(claudePath)
 // Windows checkouts materialize the symlink as a regular file holding the
@@ -93,6 +109,10 @@ for (const [owner, manifest] of [
   ['next desktop', nextDesktop],
   ['fabric', fabric],
   ['market', market],
+  ['toolbox', toolbox],
+  ['task board', taskBoard],
+  ['deep research', deepResearch],
+  ['image', imagegen],
 ]) {
   for (const field of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies', 'resolutions']) {
     for (const [name, range] of Object.entries(manifest[field] ?? {})) {

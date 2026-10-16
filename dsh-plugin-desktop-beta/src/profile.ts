@@ -89,6 +89,13 @@ const AA_ROW_ID = 'agents-anywhere-bridge-next'
 const BIN_NAME = DESKTOP_PACKAGE_NAME
 const REQUIRED_BUNDLES = requiredWebBundles()
 const REQUIRED_BUNDLE_SET = new Set(REQUIRED_BUNDLES)
+/** Company bundles offered on the Plugins page and switched on once. */
+const OFFICIAL_COMPANY_BUNDLES = Object.freeze([
+  Object.freeze({ name: 'dsh-skill-mcp', previous: Object.freeze(['dsh-toolbox-ui']), choice: 'yx-skill-mcp.json' }),
+  Object.freeze({ name: '@linxin666/dsh-client-ui-task-board', previous: Object.freeze([]), choice: 'yx-task-board.json' }),
+  Object.freeze({ name: '@dsh-external/dsh-deep-research', previous: Object.freeze([]), choice: 'yx-deep-research.json' }),
+  Object.freeze({ name: '@dickpy/dsh-imagegen', previous: Object.freeze([]), choice: 'yx-imagegen.json' }),
+])
 const OBSOLETE_DESKTOP_BUNDLE_SET = new Set(['@deepseek-ai/dsh-desktop-app'])
 // Electron's patched fs/module APIs read this logical ASAR path directly. The
 // Desktop resolver bridges out-of-tree Profile plugins back into this virtual
@@ -715,6 +722,39 @@ export function desktopBundleList(current: readonly string[]): string[] {
   return [...REQUIRED_BUNDLES, ...thirdParty]
 }
 
+/** Add each company official bundle the first time a profile is seen, then leave the user's switch alone. */
+function withOfficialBundles(dir: string, bundles: readonly string[]): { readonly bundles: string[], readonly seeded: readonly string[] } {
+  const renamed = new Map<string, string>()
+  for (const bundle of OFFICIAL_COMPANY_BUNDLES) {
+    for (const previous of bundle.previous) renamed.set(previous, bundle.name)
+  }
+  const migrated: string[] = []
+  for (const name of bundles) {
+    const next = renamed.get(name) ?? name
+    if (!migrated.includes(next)) migrated.push(next)
+  }
+  const seeded: string[] = []
+  for (const bundle of OFFICIAL_COMPANY_BUNDLES) {
+    if (existsSync(join(dir, bundle.choice))) continue
+    if (!migrated.includes(bundle.name)) migrated.push(bundle.name)
+    seeded.push(bundle.name)
+  }
+  return { bundles: migrated, seeded }
+}
+
+/** The installation copy is the official card. A previously installed profile copy would land in Installed. */
+function dependenciesWithoutOfficialBundles(dependencies: unknown): { readonly value?: Record<string, string>, readonly removed: boolean } {
+  if (dependencies === undefined || dependencies === null || typeof dependencies !== 'object' || Array.isArray(dependencies)) {
+    return { removed: false }
+  }
+  const record = dependencies as Record<string, string>
+  const names = OFFICIAL_COMPANY_BUNDLES.flatMap(bundle => [bundle.name, ...bundle.previous])
+  if (!names.some(name => Object.hasOwn(record, name))) return { value: record, removed: false }
+  const next = { ...record }
+  for (const name of names) delete next[name]
+  return { value: next, removed: true }
+}
+
 /** Return whether two ordered string lists are identical. */
 function sameList(left: readonly string[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index])
@@ -737,10 +777,13 @@ export function ensureDesktopProfile(home: string = resolveDshHome()): string {
     throw new Error(`${BIN_NAME}: dsh.profile.bundles must be an array of package names`)
   }
   const current = rawBundles === undefined ? [] : rawBundles as string[]
-  const bundles = desktopBundleList(current)
-  if (!sameList(current, bundles)) {
+  const prepared = withOfficialBundles(dir, desktopBundleList(current))
+  const bundles = prepared.bundles
+  const dependencyUpdate = dependenciesWithoutOfficialBundles(manifest.dependencies)
+  if (!sameList(current, bundles) || dependencyUpdate.removed) {
     writeProfileManifest(dir, {
       ...manifest,
+      ...(dependencyUpdate.removed ? { dependencies: dependencyUpdate.value } : {}),
       dsh: {
         ...manifest.dsh,
         profile: {
@@ -749,6 +792,10 @@ export function ensureDesktopProfile(home: string = resolveDshHome()): string {
         },
       },
     })
+  }
+  for (const name of prepared.seeded) {
+    const bundle = OFFICIAL_COMPANY_BUNDLES.find(item => item.name === name)
+    if (bundle !== undefined) writeFileSync(join(dir, bundle.choice), `${JSON.stringify({ version: 1 })}\n`)
   }
   return dir
 }
