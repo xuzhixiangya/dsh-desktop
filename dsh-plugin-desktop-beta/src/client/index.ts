@@ -26,6 +26,8 @@ import { applyExtendedShell } from './extended-shell.ts'
 import { installDesktopLaunchWorkspaceBridge } from './launch-workspace.ts'
 import { DESKTOP_SETTINGS_FORMS_SERVICE, provideLegacySettingsScope } from './settings-bridge.ts'
 import { installSidebarFooterStyles } from './sidebar-footer-styles.ts'
+import { installSidebarTaskCopy, installSidebarTaskMenuStyles } from './sidebar-task-menu.ts'
+import { installSidebarMoreMenu, openImageStudio } from './sidebar-more-menu.tsx'
 import { desktopWindowService, provideDesktopWindow } from './window-service.ts'
 import { installYxPageIdentity, YxBrandMark, YxBrandName, YxHeroMark, YX_BRAND_PRIORITY } from './yx-brand.tsx'
 import { adoptYxChatModel, readYxChatSessions } from './yx-chat-model.ts'
@@ -166,6 +168,21 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(
     () => installSidebarFooterStyles(),
     'dsh-plugin-desktop: sidebar footer stacking styles',
+  )
+  ctx.effect(
+    () => installSidebarTaskMenuStyles(),
+    'dsh-plugin-desktop: sidebar task menu styles',
+  )
+  ctx.effect(
+    () => installSidebarTaskCopy(ctx.locale),
+    'dsh-plugin-desktop: sidebar task copy',
+  )
+  ctx.effect(
+    () => installSidebarMoreMenu(() => {
+      ctx.layout.selectPanel(null)
+      openImageStudio()
+    }),
+    'dsh-plugin-desktop: sidebar more menu',
   )
   ctx.effect(
     () => installYxPageIdentity(),

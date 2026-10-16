@@ -9,6 +9,8 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { installDesktopSettingsStyles } from '../../../dsh-plugin-desktop-beta/src/client/desktop-settings-styles.ts'
 import { installSidebarFooterStyles } from '../../../dsh-plugin-desktop-beta/src/client/sidebar-footer-styles.ts'
+import { installSidebarTaskCopy, installSidebarTaskMenuStyles } from '../../../dsh-plugin-desktop-beta/src/client/sidebar-task-menu.ts'
+import { installSidebarMoreMenu, openImageStudio } from '../../../dsh-plugin-desktop-beta/src/client/sidebar-more-menu.tsx'
 import { NextSettingsAdapter } from './settings-adapter.ts'
 import { NextDesktopSettings, NextDesktopActions } from './settings.tsx'
 import { installWindowStyles } from './styles.ts'
@@ -31,6 +33,12 @@ export const inject = ['slots', 'layout', 'locale']
 
 export function apply(ctx: Context): void {
   ctx.effect(installUiDiagnostics, 'AA and Plugins client lifecycle diagnostics')
+  ctx.effect(() => installSidebarTaskMenuStyles(), 'Sidebar task menu row')
+  ctx.effect(() => installSidebarTaskCopy(ctx.locale), 'Sidebar task copy')
+  ctx.effect(() => installSidebarMoreMenu(() => {
+    ctx.layout.selectPanel(null)
+    openImageStudio()
+  }), 'Sidebar more menu')
   ctx.effect(() => ctx.locale.register('desktop-next', {
     zh: { settings: '桌面设置', language: 'zh', safeMode: '安全模式', safeModeDetail: '当前使用临时环境。退出安全模式并重启后返回原 Profile，临时数据不会保留。', dismiss: '关闭提示', recovery: '打开恢复助手' },
     en: { settings: 'Desktop settings', language: 'en', safeMode: 'Safe mode', safeModeDetail: 'You are using a temporary environment. Exiting Safe Mode and restarting returns to the original Profile and removes the temporary data.', dismiss: 'Dismiss notice', recovery: 'Open recovery assistant' },

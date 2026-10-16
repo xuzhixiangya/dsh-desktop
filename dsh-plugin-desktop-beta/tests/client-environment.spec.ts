@@ -70,6 +70,9 @@ describe('desktop client environment', () => {
       expect(effect.mock.calls.map(([, label]) => label)).toEqual([
         'dsh-plugin-desktop: legacy settingsScope compatibility',
         'dsh-plugin-desktop: sidebar footer stacking styles',
+        'dsh-plugin-desktop: sidebar task menu styles',
+        'dsh-plugin-desktop: sidebar task copy',
+        'dsh-plugin-desktop: sidebar more menu',
         'dsh-plugin-desktop: page title and icon',
         'dsh-plugin-desktop: running status copy',
         'dsh-plugin-desktop: YX login dictionaries',
