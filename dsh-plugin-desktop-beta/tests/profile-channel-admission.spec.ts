@@ -136,7 +136,7 @@ describe('Desktop Profile release-channel admission', () => {
     })
     expect(target.locations.other).toEqual({
       identity: OTHER_DESKTOP_PRODUCT_IDENTITY,
-      userDataDir: join(target.appData, OTHER_DESKTOP_PRODUCT_IDENTITY.productName),
+      userDataDir: join(target.appData, OTHER_DESKTOP_PRODUCT_IDENTITY.userDataDirectoryName),
     })
   })
 

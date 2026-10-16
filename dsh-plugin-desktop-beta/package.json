@@ -416,6 +416,7 @@
       "category": "public.app-category.developer-tools",
       "extendInfo": {
         "CFBundleAllowMixedLocalizations": true,
+        "CFBundleDisplayName": "Silverstar Beta",
         "CFBundleDevelopmentRegion": "en",
         "NSMicrophoneUsageDescription": "DSH Desktop Beta uses the microphone for voice input.",
         "CFBundleLocalizations": [
@@ -472,7 +473,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "differentialPackage": false,
-      "shortcutName": "DSH Desktop Beta",
+      "shortcutName": "Silverstar Beta",
       "useZip": false,
       "artifactName": "DSH-Desktop-Beta-${version}-${arch}-Setup.${ext}",
       "installerIcon": "build/app-icon.ico",

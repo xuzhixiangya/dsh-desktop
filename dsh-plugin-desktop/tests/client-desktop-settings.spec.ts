@@ -537,7 +537,7 @@ describe('Desktop native action presentation', () => {
       t,
     }))
 
-    expect(markup).toContain('YX Desktop')
+    expect(markup).toContain('Silverstar')
     expect(markup).not.toContain('2.0.3')
     expect(markup).not.toContain('dshDesktopFrameVersion')
   })

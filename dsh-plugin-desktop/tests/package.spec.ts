@@ -871,7 +871,7 @@ describe('published package surface', () => {
       createDesktopShortcut: true,
       createStartMenuShortcut: true,
       differentialPackage: false,
-      shortcutName: 'DSH Desktop',
+      shortcutName: 'Silverstar',
       uninstallerIcon: 'build/app-icon.ico',
       useZip: false,
       artifactName: 'DSH-Desktop-${version}-${arch}-Setup.${ext}',
@@ -947,6 +947,7 @@ describe('published package surface', () => {
     expect(manifest.build?.mac).toEqual(expect.objectContaining({
       extendInfo: {
         CFBundleAllowMixedLocalizations: true,
+        CFBundleDisplayName: 'Silverstar',
         CFBundleDevelopmentRegion: 'en',
         NSMicrophoneUsageDescription: 'DSH Desktop uses the microphone for voice input.',
         CFBundleLocalizations: ['en', 'zh_CN'],

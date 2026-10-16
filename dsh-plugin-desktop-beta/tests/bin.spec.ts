@@ -45,7 +45,7 @@ describe('desktop npm launcher', () => {
 
   it('names the installed product and selected profile behavior', () => {
     expect(DESKTOP_CLI_HELP).toContain('Usage: yx-desktop-beta')
-    expect(DESKTOP_CLI_HELP).toContain('YX Desktop Beta')
+    expect(DESKTOP_CLI_HELP).toContain('Silverstar Beta')
     expect(DESKTOP_CLI_HELP).toContain('[folder]')
     expect(DESKTOP_CLI_HELP).toContain('register the folder as a workspace')
     expect(DESKTOP_CLI_HELP).toContain('selected Web-capable profile')
@@ -54,9 +54,9 @@ describe('desktop npm launcher', () => {
 
   it('resolves the packaged Desktop user-data directory without Electron', () => {
     expect(defaultDesktopUserDataDirectory('win32', { APPDATA: 'C:\\Users\\Example\\AppData\\Roaming' }, 'ignored'))
-      .toBe('C:\\Users\\Example\\AppData\\Roaming\\DSH Desktop Beta')
+      .toBe('C:\\Users\\Example\\AppData\\Roaming\\YX Desktop Beta')
     expect(defaultDesktopUserDataDirectory('darwin', {}, '/Users/example'))
-      .toBe('/Users/example/Library/Application Support/DSH Desktop Beta')
+      .toBe('/Users/example/Library/Application Support/YX Desktop Beta')
   })
 
   it('exports diagnostics without launching Electron', async () => {

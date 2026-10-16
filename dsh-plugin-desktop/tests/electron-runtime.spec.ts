@@ -2469,7 +2469,7 @@ describe('Electron desktop runtime', () => {
 
     expect(restart).not.toHaveBeenCalled()
     expect(electron.dialog.showMessageBox).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'question', title: 'Restart DSH Desktop', buttons: ['Restart', 'Cancel'], defaultId: 1, cancelId: 1,
+      type: 'question', title: 'Restart Silverstar', buttons: ['Restart', 'Cancel'], defaultId: 1, cancelId: 1,
     }))
 
     electron.dialog.showMessageBox.mockResolvedValueOnce({ response: 0, checkboxChecked: false })

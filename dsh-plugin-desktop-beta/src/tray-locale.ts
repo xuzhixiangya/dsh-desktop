@@ -1,5 +1,6 @@
 /** Desktop-owned native tray copy for the locales shipped by DSH. */
 
+import { DESKTOP_DISPLAY_NAME } from './product-identity.ts'
 import type { DesktopLocale } from './runtime.ts'
 import { desktopRecoveryCopy } from './recovery-copy.ts'
 
@@ -105,15 +106,15 @@ export const rendererRecoveryCopy: Record<DesktopLocale, DesktopRestartConfirmat
 const restartConfirmationCopy: Record<DesktopLocale, Record<'normal' | 'recovery', DesktopRestartConfirmationCopy>> = {
   en: {
     normal: {
-      title: 'Restart DSH Desktop',
-      message: 'Restart DSH Desktop now?',
+      title: `Restart ${DESKTOP_DISPLAY_NAME}`,
+      message: `Restart ${DESKTOP_DISPLAY_NAME} now?`,
       detail: 'Running operations may be interrupted, and unsent content may be lost. Saved settings will be kept.',
       confirm: 'Restart',
       cancel: 'Cancel',
     },
     recovery: {
       title: 'Restart in Recovery Mode',
-      message: 'Restart DSH Desktop in Recovery Mode?',
+      message: `Restart ${DESKTOP_DISPLAY_NAME} in Recovery Mode?`,
       detail: 'The app will open the recovery assistant before loading the current Profile and plugins. Running operations may be interrupted, and unsent content may be lost.',
       confirm: 'Restart in Recovery Mode',
       cancel: 'Cancel',
@@ -121,15 +122,15 @@ const restartConfirmationCopy: Record<DesktopLocale, Record<'normal' | 'recovery
   },
   zh: {
     normal: {
-      title: '重启 DSH Desktop',
-      message: '现在重启 DSH Desktop？',
+      title: `重启 ${DESKTOP_DISPLAY_NAME}`,
+      message: `现在重启 ${DESKTOP_DISPLAY_NAME}？`,
       detail: '正在运行的操作可能中断，未发送的内容可能丢失。已保存的设置会保留。',
       confirm: '重启应用',
       cancel: '取消',
     },
     recovery: {
       title: '重启到恢复模式',
-      message: '重启 DSH Desktop 并进入恢复模式？',
+      message: `重启 ${DESKTOP_DISPLAY_NAME} 并进入恢复模式？`,
       detail: '应用将先打开恢复助手，暂不加载当前 Profile 和插件。正在运行的操作可能中断，未发送的内容可能丢失。',
       confirm: '重启到恢复模式',
       cancel: '取消',

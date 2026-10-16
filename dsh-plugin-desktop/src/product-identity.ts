@@ -4,7 +4,8 @@ export const DESKTOP_RELEASE_IDENTITIES = Object.freeze({
     releaseChannel: 'stable' as const,
     packageName: 'dsh-plugin-desktop',
     productName: 'DSH Desktop',
-    displayName: 'YX Desktop',
+    displayName: 'Silverstar',
+    userDataDirectoryName: 'YX Desktop',
     commandName: 'yx-desktop',
     appId: 'ai.deepseek.dsh.desktop',
     homeDirectoryName: '.dsh',
@@ -13,7 +14,8 @@ export const DESKTOP_RELEASE_IDENTITIES = Object.freeze({
     releaseChannel: 'beta' as const,
     packageName: 'dsh-plugin-desktop-beta',
     productName: 'DSH Desktop Beta',
-    displayName: 'YX Desktop Beta',
+    displayName: 'Silverstar Beta',
+    userDataDirectoryName: 'YX Desktop Beta',
     commandName: 'yx-desktop-beta',
     appId: 'ai.deepseek.dsh.desktop.beta',
     homeDirectoryName: '.dsh-beta',
@@ -29,6 +31,7 @@ export const DESKTOP_PACKAGE_NAME = DESKTOP_PRODUCT_IDENTITY.packageName
 export const BETA_DESKTOP_PACKAGE_NAME = OTHER_DESKTOP_PRODUCT_IDENTITY.packageName
 export const DESKTOP_PRODUCT_NAME = DESKTOP_PRODUCT_IDENTITY.productName
 export const DESKTOP_DISPLAY_NAME = DESKTOP_PRODUCT_IDENTITY.displayName
+export const DESKTOP_USER_DATA_DIRECTORY_NAME = DESKTOP_PRODUCT_IDENTITY.userDataDirectoryName
 export const DESKTOP_COMMAND_NAME = DESKTOP_PRODUCT_IDENTITY.commandName
 export const DESKTOP_APP_ID = DESKTOP_PRODUCT_IDENTITY.appId
 export const DESKTOP_RELEASE_CHANNEL = DESKTOP_PRODUCT_IDENTITY.releaseChannel

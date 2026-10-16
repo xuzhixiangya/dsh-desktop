@@ -145,7 +145,7 @@ describe('Setup Wizard welcome page', () => {
     }))
     expect(markup).toContain('data-setup-step="welcome"')
     expect(markup).toContain(copy.welcomeTitle)
-    expect(markup).toContain('YX Desktop')
+    expect(markup).toContain('Silverstar')
     expect(markup).not.toContain(`v${input.appVersion}`)
     expect(markup).not.toContain('data-beta-placement="title-bottom-right"')
     expect(markup).toContain(copy.welcomeBody)

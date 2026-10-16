@@ -932,7 +932,7 @@ describe('published package surface', () => {
       createDesktopShortcut: true,
       createStartMenuShortcut: true,
       differentialPackage: false,
-      shortcutName: 'DSH Desktop Beta',
+      shortcutName: 'Silverstar Beta',
       useZip: false,
       artifactName: 'DSH-Desktop-Beta-${version}-${arch}-Setup.${ext}',
     })
@@ -1013,6 +1013,7 @@ describe('published package surface', () => {
     expect(manifest.build?.mac).toEqual(expect.objectContaining({
       extendInfo: {
         CFBundleAllowMixedLocalizations: true,
+        CFBundleDisplayName: 'Silverstar Beta',
         CFBundleDevelopmentRegion: 'en',
         NSMicrophoneUsageDescription: 'DSH Desktop Beta uses the microphone for voice input.',
         CFBundleLocalizations: ['en', 'zh_CN'],

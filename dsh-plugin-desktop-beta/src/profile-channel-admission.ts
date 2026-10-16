@@ -66,7 +66,7 @@ export function desktopReleaseUserDataLocations(
   })
   const other = Object.freeze({
     identity: OTHER_DESKTOP_PRODUCT_IDENTITY,
-    userDataDir: join(appData, OTHER_DESKTOP_PRODUCT_IDENTITY.productName),
+    userDataDir: join(appData, OTHER_DESKTOP_PRODUCT_IDENTITY.userDataDirectoryName),
   })
   return Object.freeze({ current, other, all: Object.freeze([current, other]) })
 }
