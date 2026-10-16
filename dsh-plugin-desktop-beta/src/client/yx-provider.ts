@@ -21,6 +21,24 @@ import {
 /** How many models a first login places in the provider, matching the Models page habit of starting small. */
 const YX_DEFAULT_MODEL_COUNT = 2
 const YX_ACCOUNT_STORAGE_KEY = 'dsh.yx.account'
+/** Profile entry that chooses the model for a new chat. */
+const YX_DEFAULT_MODEL_ENTRY = 'agent-default-model'
+/** Responses API. This is what lets a model offer a reasoning-effort control. */
+const YX_PROVIDER_API = 'openai-responses'
+/** Default effort shown in the composer. The model can still be switched. */
+const YX_DEFAULT_REASONING = 'high'
+/**
+ * Levels the composer offers for a DeepSeek model on the responses API.
+ * `off` is empty so the request simply omits the effort.
+ */
+const YX_DEEPSEEK_REASONING: JsonValue = Object.freeze({
+  off: null,
+  low: 'low',
+  high: 'high',
+  max: 'max',
+})
+/** Built-in routes that ask for a DeepSeek key this desktop does not store. */
+const OFFICIAL_DEEPSEEK_ROUTES = new Set(['deepseek-official', 'deepseek-account'])
 
 export interface YxProviderSave {
   /** True when this login left a model list the user had already saved. */
@@ -152,6 +170,7 @@ export async function saveYxProvider(
   const baseURL = acceptedBaseURL(result.baseURL)
   const apiKey = assertYxApiKey(result.apiKey)
   let saved: YxProviderSave = { keptModels: false, modelCount: 0 }
+  let models: JsonValue[] = []
   let retried = false
   for (;;) {
     const described = await remote.settings.describe()
@@ -159,16 +178,9 @@ export async function saveYxProvider(
     const namespace = described.value.namespaces.find(item => item.ns === YX_PROVIDER_NAMESPACE)
     if (namespace === undefined) throw new YxGatewayError('当前 Profile 还不能配置自定义模型')
     const kept = keptProviderModels(namespace.user)
-    const models = kept ?? defaultYxModelIds(result.models).map(id => ({ id, name: id }))
+    models = (kept ?? defaultYxModelIds(result.models).map(id => ({ id, name: id }))).map(upgradeYxModel)
     saved = { keptModels: kept !== undefined, modelCount: models.length }
-    const profile: JsonValue = {
-      displayName: 'YX',
-      accountName: result.username.trim(),
-      apiKeyEnv: YX_API_KEY_REF,
-      api: 'openai-completions',
-      baseURL,
-      models,
-    }
+    const profile = yxProviderDocument(models, { accountName: result.username.trim(), baseURL })
     const written = await remote.settings.mutate(YX_PROVIDER_NAMESPACE, [{
       op: 'set',
       path: ['providers', YX_PROVIDER_ROUTE],
@@ -181,9 +193,122 @@ export async function saveYxProvider(
     }
     throw new YxGatewayError(written.error.message)
   }
+  const modelId = yxChatModelId({ providers: { [YX_PROVIDER_ROUTE]: { models } } })
+  if (modelId !== null) await ensureYxDefaultModel(remote, modelId)
   const stored = await remote.credentials.set(YX_API_KEY_REF, apiKey)
   if (!stored.ok) throw new YxGatewayError(stored.error.message)
   return saved
+}
+
+/**
+ * Point a new chat at the company gateway when it would otherwise call
+ * DeepSeek's own route. A gateway model the user already chose stays put.
+ */
+export async function ensureYxDefaultModel(remote: YxSettingsRemote, modelId: string): Promise<void> {
+  let retried = false
+  for (;;) {
+    const described = await remote.settings.describe()
+    if (!described.ok) throw new YxGatewayError(described.error.message)
+    const namespace = described.value.namespaces.find(item => item.ns === YX_DEFAULT_MODEL_ENTRY)
+    if (namespace === undefined) return
+    const provider = asRecord(namespace.value)?.provider
+    if (provider === YX_PROVIDER_ROUTE) return
+    if (typeof provider === 'string' && !OFFICIAL_DEEPSEEK_ROUTES.has(provider)) return
+    const written = await remote.settings.mutate(YX_DEFAULT_MODEL_ENTRY, [
+      { op: 'set', path: ['provider'], value: YX_PROVIDER_ROUTE },
+      { op: 'set', path: ['model'], value: modelId },
+      { op: 'unset', path: ['reasoningEffort'] },
+    ], namespace.revision)
+    if (written.ok) return
+    if (!retried && written.error.code === 'settings/conflict') {
+      retried = true
+      continue
+    }
+    throw new YxGatewayError(written.error.message)
+  }
+}
+
+/**
+ * Move an already saved gateway onto the responses API and give its DeepSeek
+ * models a reasoning control. A model whose efforts were edited stays as saved.
+ */
+export async function ensureYxResponsesProtocol(remote: YxSettingsRemote): Promise<void> {
+  let retried = false
+  for (;;) {
+    const described = await remote.settings.describe()
+    if (!described.ok) throw new YxGatewayError(described.error.message)
+    const namespace = described.value.namespaces.find(item => item.ns === YX_PROVIDER_NAMESPACE)
+    if (namespace === undefined) return
+    const stored = asRecord(asRecord(namespace.user)?.providers)?.[YX_PROVIDER_ROUTE]
+    const provider = asRecord(stored)
+    if (provider === undefined || !responsesProtocolNeedsUpgrade(provider)) return
+    const models = keptProviderModels(namespace.user)
+    if (models === undefined) return
+    const accountName = typeof provider.accountName === 'string' ? provider.accountName : ''
+    const baseURL = typeof provider.baseURL === 'string' ? provider.baseURL : ''
+    if (accountName.length === 0 || baseURL.length === 0) return
+    const written = await remote.settings.mutate(YX_PROVIDER_NAMESPACE, [{
+      op: 'set',
+      path: ['providers', YX_PROVIDER_ROUTE],
+      value: yxProviderDocument(models.map(upgradeYxModel), { accountName, baseURL }),
+    }], namespace.revision)
+    if (written.ok) return
+    if (!retried && written.error.code === 'settings/conflict') {
+      retried = true
+      continue
+    }
+    throw new YxGatewayError(written.error.message)
+  }
+}
+
+function yxProviderDocument(
+  models: readonly JsonValue[],
+  extras: { readonly accountName: string; readonly baseURL: string },
+): JsonValue {
+  return {
+    displayName: 'YX',
+    accountName: extras.accountName,
+    apiKeyEnv: YX_API_KEY_REF,
+    api: YX_PROVIDER_API,
+    baseURL: extras.baseURL,
+    reasoning: YX_DEFAULT_REASONING,
+    models: [...models],
+  }
+}
+
+function responsesProtocolNeedsUpgrade(provider: Record<string, JsonValue>): boolean {
+  if (provider.api !== YX_PROVIDER_API || provider.reasoning !== YX_DEFAULT_REASONING) return true
+  const models = provider.models
+  if (!Array.isArray(models)) return false
+  return models.some(row => {
+    const record = asRecord(row)
+    return record !== undefined && typeof record.id === 'string'
+      && /deepseek/iu.test(record.id) && record.reasoningEfforts === undefined
+  })
+}
+
+/** Add the responses reasoning control to a DeepSeek row that does not have one. */
+function upgradeYxModel(row: JsonValue): JsonValue {
+  const record = asRecord(row)
+  if (record === undefined || typeof record.id !== 'string') return row
+  if (!/deepseek/iu.test(record.id) || record.reasoningEfforts !== undefined) return record
+  return { ...record, reasoningEfforts: YX_DEEPSEEK_REASONING }
+}
+
+/** First model id saved on the company provider. */
+export function yxChatModelId(document: JsonValue | undefined): string | null {
+  const id = asRecord(keptProviderModels(document)?.[0])?.id
+  return typeof id === 'string' && id.length > 0 ? id : null
+}
+
+/**
+ * A blank chat, or one still aimed at DeepSeek's own route, should use the
+ * company gateway. A chat already on that gateway is left alone.
+ */
+export function sessionShouldUseYxGateway(provider: string | undefined, blank: boolean): boolean {
+  if (provider === YX_PROVIDER_ROUTE) return false
+  if (provider === undefined) return blank
+  return OFFICIAL_DEEPSEEK_ROUTES.has(provider)
 }
 
 async function accountNameFromSettings(remote: YxSettingsRemote): Promise<string | null> {

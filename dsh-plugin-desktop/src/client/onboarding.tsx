@@ -2,12 +2,14 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
+import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-account/client'
 import { Button, Toast } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { DesktopOnboardingBridge, DesktopOnboardingSnapshot } from '../setup-onboarding-bridge.ts'
 import { YxLoginPanel } from './YxLoginPanel.tsx'
 import { YX_LOGIN_LOCALE_NAMESPACE, type YxLoginLocaleKey } from './yx-login-locales.ts'
+import { adoptYxChatModel, readYxChatSessions } from './yx-chat-model.ts'
 import { applyYxLogin, type YxProviderSave } from './yx-provider.ts'
 import type { YxLoginResult } from '../yx-gateway.ts'
 
@@ -25,7 +27,13 @@ export function registerDesktopOnboarding(ctx: Context, content: SetupContent): 
   ctx.slots.inject('onboarding.desktop.before', () => ctx.slots.register({
     name: 'onboarding.desktop.before', inject: () => ({
       bridge, content, zh: ctx.locale.getLocale().active.startsWith('zh'), t,
-      save: (result: YxLoginResult) => applyYxLogin(ctx.remote, result),
+      save: async (result: YxLoginResult) => {
+        const saved = await applyYxLogin(ctx.remote, result)
+        if (saved !== null && ctx.sessions.list.getSnapshot().phase === 'ready') {
+          await adoptYxChatModel(ctx.remote, readYxChatSessions(ctx.sessions.list.getSnapshot()))
+        }
+        return saved
+      },
     }),
   }, DesktopOnboarding))
 }

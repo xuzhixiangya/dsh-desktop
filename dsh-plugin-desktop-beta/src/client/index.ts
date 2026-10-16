@@ -3,6 +3,7 @@ import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
+import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only service and SlotMap convergence for the Desktop settings section.
@@ -27,6 +28,8 @@ import { DESKTOP_SETTINGS_FORMS_SERVICE, provideLegacySettingsScope } from './se
 import { installSidebarFooterStyles } from './sidebar-footer-styles.ts'
 import { desktopWindowService, provideDesktopWindow } from './window-service.ts'
 import { installYxPageIdentity, YxBrandMark, YxBrandName, YxHeroMark, YX_BRAND_PRIORITY } from './yx-brand.tsx'
+import { adoptYxChatModel, readYxChatSessions } from './yx-chat-model.ts'
+import { sessionShouldUseYxGateway } from './yx-provider.ts'
 import { installRunningStatusCopy } from './yx-running-status.ts'
 
 export { applyAdvancedShell } from './advanced-shell.ts'
@@ -124,10 +127,12 @@ export const inject = [
   // alone does not allow reading `remote.settings` or `remote.credentials`.
   'remote.credentials',
   'remote.settings',
+  'remote.session',
   DESKTOP_SETTINGS_FORMS_SERVICE,
   'sessions',
   'theme',
   'uiRenderer',
+  'layout',
 ]
 
 /** Company mark, wordmark, and blank-session slogan. These do not need a desktop window. */
@@ -186,6 +191,31 @@ export function apply(ctx: ClientContext): void {
   registerDesktopOnboarding(ctx, (snapshot, locale, finish, renderNavigation) => createElement<{ embedded?: EmbeddedSetupWizard }>(SetupWizardApp, {
     embedded: { input: snapshot.input, locale, renderNavigation, finish: selection => finish(snapshot.profile, selection) },
   }))
+  ctx.effect(() => {
+    let stopped = false
+    let pending = false
+    let again = false
+    let aligned = false
+    const run = (): void => {
+      if (stopped || ctx.sessions.list.getSnapshot().phase !== 'ready') return
+      const sessions = readYxChatSessions(ctx.sessions.list.getSnapshot())
+      const needsSession = sessions.some(session => !session.running && sessionShouldUseYxGateway(session.provider, session.blank))
+      if (aligned && !needsSession) return
+      if (pending) { again = true; return }
+      pending = true
+      void adoptYxChatModel(ctx.remote, sessions).then(adopted => { aligned = adopted }).catch((cause: unknown) => {
+        console.error('dsh-plugin-desktop: failed to select the company model', cause)
+      }).finally(() => {
+        pending = false
+        if (!again || stopped) return
+        again = false
+        run()
+      })
+    }
+    const stop = ctx.sessions.list.subscribe(run)
+    run()
+    return () => { stopped = true; stop() }
+  }, 'dsh-plugin-desktop: company model selection')
   ctx.effect(
     () => startRendererBootReporter(ctx.loader),
     'dsh-plugin-desktop: renderer boot health report',
