@@ -1,0 +1,49 @@
+Task-board settings card disclosure - GUI verification transcript
+====================================================================
+
+Date: 2026-10-01 (Asia/Shanghai)
+Build: packages/*/lib rebuilt from this working tree (pnpm build), aggregate
+       packages/dsh-web-all/lib/client.js refreshed and fingerprinted.
+
+Method
+------
+The user's running desktop host cannot be driven without its per-boot browser
+token, so the capture boots an ISOLATED host instead of touching it:
+
+  1. scratch home with a copy of the web profile (the profile links the local
+     aggregate packages/dsh-web-all):
+       rm -rf /tmp/dsh-verify
+       mkdir -p /tmp/dsh-verify/profiles
+       cp -a ~/.dsh/profiles/web /tmp/dsh-verify/profiles/web
+       ln -s ~/.dsh/profiles/node_modules /tmp/dsh-verify/profiles/node_modules
+  2. DSH_HOME=/tmp/dsh-verify dsh --profile web --port 19400 --no-open
+     -> dsh web: http://127.0.0.1:19400/?token=<redacted>
+     (the scratch home gets its own task-board ledger; the user's ~/.dsh is
+     never written - verified: /tmp/dsh-verify/task-board/ledger-v2.json is a
+     fresh 223-byte document.)
+  3. headless Chrome with a CDP port, then the tokenized URL in a tab:
+       "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+         --headless=new --disable-gpu --hide-scrollbars --window-size=1600,1000 \
+         --remote-debugging-port=9333 --user-data-dir=/tmp/dsh-chrome-verify about:blank
+  4. settings page: click 设置, then the Web 插件 section, then the 任务看板
+     card header, then one topic header per capture. Page.screenshot via CDP.
+
+Observed DOM after expanding 任务看板 (button[aria-expanded] dump, in order)
+--------------------------------------------------------------------------
+[{"t":"设置","e":"true"},
+ {"t":"远程访问设置配对安全与设备限额。","e":"false"},
+ {"t":"任务看板控制 Host 任务看板、agent 播报与运行期间的系统空闲睡眠保护。","e":"true"},
+ {"t":"启用任务看板看板总开关及其运行行为：agent 播报、系统空闲睡眠保护、子任务层","e":"false"},
+ {"t":"任务验收goal 形式任务的完成前验收：开关、裁判模型与判据阈值。","e":"false"},
+ {"t":"GitHub Issues 同步任务看板的外部提供方扩展：把 GitHub Is","e":"false"}]
+
+Captures
+--------
+tb-settings-topics-collapsed.png      three topic cards, all collapsed, one save row
+tb-settings-board-topic-open.png      启用任务看板 open: switch, agent announcement,
+                                      idle-sleep protection, subtask depth
+tb-settings-acceptance-topic-open.png 任务验收 open: switch, judge model, reasoning
+                                      level and the resolved acceptance preview
+
+Teardown: verifier host and headless Chrome stopped, /tmp/dsh-verify removed.
+The user's own host process was never signalled, restarted or re-bound.

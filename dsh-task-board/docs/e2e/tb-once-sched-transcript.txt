@@ -1,0 +1,60 @@
+任务看板：原生单次定时与有限次数执行的页面核验记录
+====================================================
+
+目的：核验用户可见调度界面的真实渲染与规则状态展示，并确认隔离实例干净回收。
+调度生效证据来自可控时钟的自动化测试（tests/schedule-once.spec.ts、
+tests/host-service.spec.ts），不是本记录中的界面展示。
+
+环境
+----
+- 宿主：安装版 dsh 0.2.0-rc.2（/Users/zcl/.local/bin/dsh）。
+- 隔离 home：DSH_HOME=/tmp/dsh-verify-tb-once（profiles 只读复制用户 profile 配置，
+  node_modules 以符号链接解析；task-board 账本为该 home 私有）。
+- 端口：--port 0（OS 分配），--no-open；未触碰用户正在运行的 DSH 服务。
+- 驱动：Playwright（channel: chrome, headless），视口 1440x900 与 390x844（zh-CN）。
+- 该实例的 tokenized URL 形如 http://127.0.0.1:<port>/?token=<per-run token>
+  （token 随进程消失，未记录在此）。
+
+预置账本（$DSH_HOME/task-board/ledger-v2.json，schemaVersion 6）
+----------------------------------------------------------------
+- card-once    单次计划卡片     mode=once, at=now+2h, timeZone=Asia/Shanghai, runCount=0
+- card-capped  两次上限卡片     mode=cron '*'* * '', maxRuns=2, runCount=1
+- card-done    已结束的单次卡片 mode=once, runCount=1, endedReason=fired, enabled=false
+
+观察结果（真实页面文本）
+------------------------
+1. 看板列：单次计划卡片徽章为「单次」，两次上限卡片徽章为「定时」。
+2. 打开 card-once 详情（定时运行区域）：
+   「调度方式 单次」「执行时间 2026/10/09 14:20」「时区 Host 时区（Asia/Shanghai）」
+   「下次运行 2026年10月9日 14:20:22（1 小时 57 分钟）· 上次触发 —」
+   「已执行 0/1 次 · 剩余 1 次」「关闭调度」。
+3. 打开 card-capped 详情：
+   「调度方式 循环」cron 输入 0 9 * * * 与「预设…」选择器
+   「次数上限 最多 2 次」（选项：不限次数 / 最多 1 次 / 最多 2 次 / 自定义）
+   「下次运行 2026年10月10日 09:00:00（20 小时 37 分钟）· 上次触发 —」
+   「已执行 1/2 次 · 剩余 1 次」「关闭调度」。
+4. 打开 card-done 详情：
+   「调度方式 单次」「执行时间 2026/10/09 12:20」（计划时刻在结束后仍可见）
+   「下次运行 尚未排程 · 上次触发 2026年10月9日 12:20:16」
+   「已执行 1/1 次 · 剩余 0 次」「调度已结束：单次计划已执行」。
+5. 390x844 视口：documentElement.scrollWidth == innerWidth == 390（无横向溢出），
+   调度区域控件可点、标签堆叠正常。
+6. 宿主日志无任务看板错误（仅两条与本改动无关的 profile bundle 兼容性跳过警告）。
+
+截图（同目录）
+--------------
+- tb-sched-once-board.png    看板列与「单次 / 定时」徽章
+- tb-sched-once-plan.png     单次计划编辑器与 0/1 计数
+- tb-sched-capped-plan.png   循环计划、次数上限与 1/2 计数
+- tb-sched-ended-once.png    结束状态与计划时刻
+- tb-sched-once-mobile.png   390px 视口
+
+回收
+----
+- 停止该后台实例后：端口释放（lsof 无监听）、无残留 `dsh web` 进程、
+  $DSH_HOME/task-board/ledger-v2.lock 已删除；/tmp 下的隔离 home 与探针脚本已清理。
+
+证据边界
+--------
+本记录只证明界面渲染与持久状态展示一致；「到点只执行一次」「最多两次后自动结束」
+由固定时钟的测试证明（tests/schedule-once.spec.ts、tests/host-service.spec.ts）。
