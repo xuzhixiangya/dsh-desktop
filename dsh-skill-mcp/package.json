@@ -1,0 +1,91 @@
+{
+  "name": "dsh-skill-mcp",
+  "version": "1.7.2",
+  "private": true,
+  "description": "Responsive MCP management UI and skills manager for DeepSeek Harness Web — floating panel, JSON import, profile-backed Host Remote management, and a skill market with a hard license gate.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Imzl-zl/dsh-toolbox-ui.git"
+  },
+  "homepage": "https://github.com/Imzl-zl/dsh-toolbox-ui#readme",
+  "bugs": {
+    "url": "https://github.com/Imzl-zl/dsh-toolbox-ui/issues"
+  },
+  "type": "module",
+  "icon": "./icon.svg",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "exports": {
+    "./typert": "./lib/typert.js",
+    "./client": "./lib/client.js",
+    ".": "./lib/index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "locale/*.json",
+    "icon.svg",
+    "docs/*.md",
+    "cordis.patch.yml",
+    "README.md",
+    "README.en.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "smol-toml": "^1.8.0",
+    "yaml": "2.9.0",
+    "zod": "4.4.3"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.2",
+    "@deepseek-ai/cordis-plugin-loader": "^1.0.3",
+    "@deepseek-ai/dsh-agent": ">=0.1.5-rc.1 <0.2.0",
+    "@deepseek-ai/dsh-agent-loop": ">=0.1.5-rc.1 <0.2.0",
+    "@deepseek-ai/dsh-atomic-write": ">=0.1.5-rc.1 <0.2.0",
+    "@deepseek-ai/dsh-mcp-client": ">=0.1.5-rc.1 <0.2.0",
+    "@deepseek-ai/dsh-scope": ">=0.1.5-rc.1 <0.2.0",
+    "@deepseek-ai/dsh-skill": ">=0.1.5-rc.1 <0.2.0",
+    "@deepseek-ai/dsh-tools": ">=0.1.5-rc.1 <0.2.0",
+    "@deepseek-ai/dsh-typert-protocol": ">=0.1.5-rc.1 <0.2.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "~4.0.2",
+    "@deepseek-ai/cordis-plugin-loader": "^1.0.3",
+    "@deepseek-ai/dsh-agent": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-agent-loop": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-api-gateway": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-atomic-write": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-mcp-client": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-scope": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-skill": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-skill-filesystem": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-typert-loader": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "^0.2.0-rc.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-api-remotes"
+      ]
+    }
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "mcp",
+    "skills",
+    "skill-manager",
+    "agent-skills"
+  ],
+  "license": "MIT"
+}
