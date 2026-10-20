@@ -863,7 +863,9 @@ export function verifyPackagedAgentsAnywhere(
 ): void {
   if (context.electronPlatformName === 'darwin') {
     const root = usesAsarLayout(context) ? resolvePackagedUnpackedRoot(context) : resolvePackagedApplicationRoot(context)
-    for (const entry of MACOS_UNIVERSAL_NATIVE_ENTRIES.filter(entry => entry.path.endsWith('/bin/uv'))) {
+    const packagedArch = context.arch === 3 ? 'arm64' : context.arch === 1 ? 'x86_64' : undefined
+    for (const entry of MACOS_UNIVERSAL_NATIVE_ENTRIES.filter(entry => entry.path.endsWith('/bin/uv')
+      && (packagedArch === undefined || entry.arch === packagedArch))) {
       accessSync(join(root, entry.path), constants.X_OK)
     }
   }
@@ -891,7 +893,10 @@ export function verifyPackagedAgentsAnywhere(
 export function verifyPackagedPrimaryRuntime(context: PackagedRuntimeContext): string[] {
   const resources = dirname(resolvePackagedApplicationRoot(context))
   const projectDir = context.packager.projectDir ?? join(dirname(fileURLToPath(import.meta.url)), '..')
-  const runtimes = verifyDesktopRuntimeTree(join(resources, 'runtime'), context.electronPlatformName as NodeJS.Platform, expectedDesktopVersion(projectDir))
+  const onlyArch = context.electronPlatformName === 'darwin'
+    ? context.arch === 3 ? 'arm64' as const : context.arch === 1 ? 'x64' as const : undefined
+    : undefined
+  const runtimes = verifyDesktopRuntimeTree(join(resources, 'runtime'), context.electronPlatformName as NodeJS.Platform, expectedDesktopVersion(projectDir), onlyArch)
   for (const runtime of runtimes) {
     console.log(`Verified the ${runtime.arch} primary runtime: Python ${runtime.manifest.python}, Node ${String(runtime.manifest.node)}, pnpm ${String(runtime.manifest.pnpm)}`)
   }

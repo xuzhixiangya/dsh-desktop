@@ -140,9 +140,18 @@ function requireFile(path: string, description: string): void {
  * @param expectedVersion - Product version every manifest must record.
  * @returns The verified payloads in target order.
  */
-export function verifyDesktopRuntimeTree(runtimeRoot: string, platform: NodeJS.Platform, expectedVersion: string): VerifiedDesktopRuntime[] {
+export function verifyDesktopRuntimeTree(
+  runtimeRoot: string,
+  platform: NodeJS.Platform,
+  expectedVersion: string,
+  onlyArch?: DesktopRuntimeArch,
+): VerifiedDesktopRuntime[] {
+  const targets = desktopRuntimeTargets(platform).filter(target => onlyArch === undefined || target.arch === onlyArch)
+  if (onlyArch !== undefined && targets.length === 0) {
+    throw new Error(`Desktop runtime: ${platform} does not ship ${onlyArch}`)
+  }
   const verified: VerifiedDesktopRuntime[] = []
-  for (const { arch } of desktopRuntimeTargets(platform)) {
+  for (const { arch } of targets) {
     const directory = primaryRuntimeDirectory(runtimeRoot, arch)
     const manifestFile = join(directory, 'runtime.json')
     requireFile(manifestFile, `${arch} payload manifest`)
