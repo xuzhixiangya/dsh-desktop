@@ -68,12 +68,13 @@ test('the notice renders the entry copy in the active language', async () => {
   setLocaleActiveForTest('zh')
 })
 
-test('whatsNew RPC reports the running version and the source entries', async () => {
-  // 宿主只转发：当前版本来自 package.json（唯一真源），条目来自 lib/whats-new.js（唯一真源）。
+test('whatsNew RPC reports the running version and does not hand the panel its changelog', async () => {
+  // 这个包随桌面源码发布。版本号仍来自 package.json；更新记录留在 lib/whats-new.js，
+  // 但不再交给面板，否则没记过「看过」的机器会把当前版本说成一次更新。
   const { McpManagerGateway } = await import('../lib/index.js')
   const result = await McpManagerGateway.prototype.whatsNew.call({ ctx: {} })
   assert.equal(result.current, packageJson.version)
-  assert.deepEqual(result.entries, WHATS_NEW)
+  assert.deepEqual(result.entries, [])
 })
 
 // 客户端判定是纯函数，但它在 bundle 里（组件无法在 node 里渲染），所以沿用
@@ -121,35 +122,20 @@ function loadClientRule() {
 // 跨 realm 的数组不能直接 deepStrictEqual（原型不同），所以比对版本文本。
 const versionsOf = (entries) => Array.from(entries, (entry) => entry.version).join(',')
 
-test('the update notice reports what changed since the last confirmed version', () => {
+test('the panel does not present the plugin changelog as an update', () => {
+  // 随桌面源码发布：无论没看过、刚升级，还是记录对不上，都不弹。
   const { whatsNewFor } = loadClientRule()
   const entries = [
     { version: '1.0.0', items: [{ text: 'a' }] },
     { version: '1.1.0', items: [{ text: 'b' }] },
     { version: '1.2.0', items: [{ text: 'c' }] },
   ]
-  assert.equal(versionsOf(whatsNewFor('1.2.0', '1.2.0', entries)), '', '同一版本不重复提示')
-  assert.equal(versionsOf(whatsNewFor('1.2.0', '1.1.0', entries)), '1.2.0')
-  // 跨版本升级不漏：中间跳过的版本一起报。
-  assert.equal(versionsOf(whatsNewFor('1.2.0', '1.0.0', entries)), '1.1.0,1.2.0')
-})
-
-test('an unrecorded or unrecognised last-seen version reports only the current release', () => {
-  const { whatsNewFor } = loadClientRule()
-  const entries = [
-    { version: '1.0.0', items: [{ text: 'a' }] },
-    { version: '1.1.0', items: [{ text: 'b' }] },
-  ]
-  // 新装，以及"从还没有这个提示功能的版本升上来"——两者分不出来，而后者正是要覆盖的人，
-  // 所以只报当前这一条：不满屏倒历史，也不会漏掉这次到底变了什么。
-  assert.equal(versionsOf(whatsNewFor('1.1.0', null, entries)), '1.1.0')
-  assert.equal(versionsOf(whatsNewFor('1.1.0', '0.9.0', entries)), '1.1.0')
-  // 降级（记录比当前新）：不报历史，函数也不崩。
-  assert.equal(versionsOf(whatsNewFor('1.1.0', '9.9.9', entries)), '1.1.0')
-  // 当前版本没有条目时也不崩：发布闸门（上一组断言）会拦住这种状况，这里只要求函数安全 ——
-  // 它仍然报出「上次那版之后我们知道的全部」，宁可多报一条也不静默吞掉。
-  assert.equal(versionsOf(whatsNewFor('2.0.0', '1.0.0', entries)), '1.1.0')
-  assert.equal(versionsOf(whatsNewFor('2.0.0', null, entries)), '')
+  assert.equal(versionsOf(whatsNewFor('1.2.0', '1.2.0', entries)), '')
+  assert.equal(versionsOf(whatsNewFor('1.2.0', '1.1.0', entries)), '')
+  assert.equal(versionsOf(whatsNewFor('1.2.0', '1.0.0', entries)), '')
+  assert.equal(versionsOf(whatsNewFor('1.1.0', null, entries)), '')
+  assert.equal(versionsOf(whatsNewFor('1.1.0', '0.9.0', entries)), '')
+  assert.equal(versionsOf(whatsNewFor('1.1.0', '9.9.9', entries)), '')
   assert.equal(versionsOf(whatsNewFor(undefined, '1.0.0', entries)), '')
   assert.equal(versionsOf(whatsNewFor('1.1.0', '1.0.0', [])), '')
 })

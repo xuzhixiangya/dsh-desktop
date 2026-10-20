@@ -17,7 +17,6 @@ import { invocationOf, listSkillViews, resolveSkillReference, resolveTargetRefer
 import { importSkill, readSkillDocument, removeSkill, scanDisabledSkills, setSkillEnabled, setSkillModelInvocable, setSkillUserInvocable } from "./skills-file-ops.js";
 import { downloadHubArchive, hubCategories, hubSkillDetail, searchHubSkills } from "./skillhub.js";
 import { setOwn } from "./own-property.js";
-import { WHATS_NEW } from "./whats-new.js";
 import { evaluateEnvExpression, jsExpressionToTemplate, specToMcpEntry } from "./workspace-config.js";
 import { canonicalWorkspacePath, assertRegisteredWorkspace, installAgentRuntime, listWorkspaceRecords, liveWorkspaceAgentCount, projectConnectionsView, readWorkspaceConfigCached, reconcileWorkspaceConnections, reconcileWorkspaceRestricts, reconnectWorkspaceServer, withRegisteredWorkspaceWrite, workspaceConnectionStatus, workspaceMountErrorsView, workspaceRestrictErrorView, workspaceScopeErrorsView, workspaceToolSchemas, writeWorkspaceConfigFile } from "./workspace-runtime.js";
 
@@ -300,19 +299,9 @@ function containsRedactedValue(value) {
 	if (value && typeof value === "object") return Object.values(value).some(containsRedactedValue);
 	return false;
 }
-// ---------- 更新提示（被动、可关闭、绝不自动更新） ----------
-// 面板打开时客户端会调一次 updateHint：Host 每天最多向 npm registry 发一次查询（进程内缓存），
-// 有新版时返回供面板显示可关闭的提示条。查询失败、超时、限流或被
-// DSH_MCP_MANAGER_DISABLE_UPDATE_CHECK 禁用时静默无提示——这是有意设计：更新提示是纯增值信息，
-// 不允许影响面板可用性；除这一条 GET 外不发送任何数据。
-//
-// ⚠️ 问的是**本包在 npm 上的 latest**，不是本仓库的 `/releases/latest`：同一个仓库承载两条产品线
-// （本线 `dsh-toolbox-ui` 与老线那个包——两个名字见 release.yml），而仓库级 "latest" 是**共用**的单个
-// 槽位，且必须留给老线——老线（≤1.5.3）面板的「升级」按钮读的正是那里，下发的却是**它自己那个包名**的
-// 版本，所以本线的 Release 一直带 `--prerelease`（见 release.yml 的说明），让 latest 停在老线的
-// 版本上。本线若也读那个 feed，读到的永远是旧线的版本号 → 提示恒为「已是最新」：新版本发出去，
-// 装了本线的用户什么也看不到（v1.6.1 → v1.6.2 就这样哑掉过一次）。
-// 包名由 package.json 派生（pluginName）：写死任何一个包名都会在另一条线上静默错。
+// ---------- 更新提示 ----------
+// 这个包随桌面源码发布。updateHint 不再询问 npm，也不报告可安装的新版本：
+// 装上注册表里的包会盖掉源码维护的内容。DSH_MCP_MANAGER_DISABLE_UPDATE_CHECK 仍按原样返回禁用。
 /**
  * 让位检测（`conflictingManager`）的自身判据：**loader 条目的 `name` 等于本包名**。
  *
@@ -342,19 +331,7 @@ function isMcpManagerPluginName(name) {
 	return lower.includes("mcp") && lower.includes("manager");
 }
 
-const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
-const UPDATE_CHECK_TIMEOUT_MS = 5000;
 const UPDATE_CHECK_DISABLED_ENV = "DSH_MCP_MANAGER_DISABLE_UPDATE_CHECK";
-let updateCheckState = { checkedAt: 0, result: null };
-
-/** 本包在 npm 上的 latest 端点；包名读不到就没有端点（当作无提示，不猜一个包名）。 */
-function updateLatestUrl() {
-  const name = pluginName();
-  return name === "" ? null : `https://registry.npmjs.org/${encodeURIComponent(name)}/latest`;
-}
-
-/** 说明页：两条线的 tag 都是 vX.Y.Z，故由版本号拼本仓库的 release 页（与老线的 updateHint 一致）。 */
-const releasePageOf = (version) => `https://github.com/Imzl-zl/dsh-toolbox-ui/releases/tag/v${version}`;
 
 function pluginVersion() {
   try {
@@ -376,46 +353,12 @@ function pluginName() {
   }
 }
 
-function compareVersions(left, right) {
-  const a = String(left).split(".").map((part) => Number.parseInt(part, 10) || 0);
-  const b = String(right).split(".").map((part) => Number.parseInt(part, 10) || 0);
-  for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
-    const delta = (a[i] || 0) - (b[i] || 0);
-    if (delta !== 0) return delta;
-  }
-  return 0;
-}
-
-async function checkForUpdate(now = Date.now(), force = false) {
+async function checkForUpdate() {
   const current = pluginVersion();
-  if (process.env[UPDATE_CHECK_DISABLED_ENV]) return { current, updateAvailable: false, disabled: true };
-  const cached = updateCheckState.result;
-  if (!force && cached && now - updateCheckState.checkedAt < UPDATE_CHECK_INTERVAL_MS && cached.current === current) return cached;
-  let latest = null;
-  let url = null;
-  const endpoint = updateLatestUrl();
-  try {
-    if (endpoint !== null) {
-      const response = await fetch(endpoint, {
-        headers: { accept: "application/json" },
-        signal: AbortSignal.timeout(UPDATE_CHECK_TIMEOUT_MS),
-      });
-      if (response.ok) {
-        const body = await response.json();
-        // npm 的 `/<包名>/latest` 只给版本号，没有页面链接——提示条要指得出「更新了什么」，
-        // 所以由版本号拼 release 页（两线共用 vX.Y.Z 的 tag 命名）。
-        if (typeof body?.version === "string" && body.version !== "") {
-          latest = body.version;
-          url = releasePageOf(latest);
-        }
-      }
-    }
-  } catch {
-    // 离线/超时/限流：视作无新版，提示缺失比面板报错更可接受。
+  if (process.env[UPDATE_CHECK_DISABLED_ENV]) {
+    return { current, latest: current, url: null, updateAvailable: false, disabled: true };
   }
-  const result = { current, latest, url, updateAvailable: !!latest && compareVersions(latest, current) > 0 };
-  updateCheckState = { checkedAt: now, result };
-  return result;
+  return { current, latest: current, url: null, updateAvailable: false };
 }
 
 function summarize(entry, inventory, managed, conflict = false, lastLog = null) {
@@ -1423,9 +1366,10 @@ let McpManagerGateway = (() => {
 		return checkForUpdate();
 	}
 	async whatsNew() {
-		// 只回数据，不在宿主判定「该不该弹」：「上次看到的版本」是每台浏览器自己的事实
-		// （localStorage），宿主没有这个视角；判定在客户端（whatsNewFor）。
-		return { current: pluginVersion(), entries: WHATS_NEW };
+		// 这个包随桌面源码发布。打开面板不再把插件自己的版本记录弹给用户：
+		// 没记过的机器都会被说成「vX 的更新」，而发版说明由桌面自己决定。
+		// 记录仍留在 lib/whats-new.js，只是不再交给面板。
+		return { current: pluginVersion(), entries: [] };
 	}
 	};
 })();

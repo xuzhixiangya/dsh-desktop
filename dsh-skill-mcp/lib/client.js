@@ -3592,8 +3592,7 @@ const McpTab = (props) => {
     return startVisibilityAwarePolling(typeof document === 'undefined' ? null : document, timer, POLL_INTERVAL_MS, () => load(false));
   }, [load, timer]);
 
-  // 更新提示：Host 每天最多查一次 npm registry（本包的 latest 端点，见 lib/index.js 的
-  // updateLatestUrl）；纯增值信息，任何失败都静默，不打扰面板。
+  // 更新提示：宿主不再查询 npm。这个包随桌面源码发布，面板不提供换成发布包的升级。
   useEffect(() => {
     let cancelled = false;
     call('updateHint').then((res) => {
@@ -4592,15 +4591,9 @@ const McpFooterAction = ({ wide }) => {
   );
 };
 
-// ── 更新提示：升级后说一次「这次变了什么」────────────────────────────
-// 为什么要有它：新能力只写在 README / release note 里，用户根本不会去找——面板头部的
-// 「入口」开关就是这么被忽略掉的。所以升级后主动说一次，并指出它在哪。
-// 内容真源在 lib/whats-new.js（宿主侧），这里只管「这次该不该说」：
-//   - 记的是「上次确认过的版本」（与 updateHint 的 dismissed 同一个惯用法，确认才落盘）；
-//   - 认得出上次那版 → 报它之后的全部（跨版本升级不漏）；
-//   - 认不出（新装，或从还没有这个功能的版本升上来）→ 只报当前这一条。这两者从
-//     localStorage 里分不辨，而后者正是要覆盖的人，所以偏向「说一次」，代价只是新装
-//     用户看到一条本次更新。
+// ── 更新提示：这个包随桌面源码发布，面板不再弹出 ─────────────────────
+// 记录仍在 lib/whats-new.js。whatsNewFor 固定不报：新装和另一台电脑都没有
+// 「看过」记录，弹出来会被说成「vX 的更新」，而发版说明由桌面自己决定。
 const WHATS_NEW_SEEN_KEY = 'dsh-mcp-manager-ui.whatsNew.seen';
 
 // ── 一键升级：借官方 pluginManager，不自己 spawn 包管理器 ──────────────
@@ -4632,24 +4625,11 @@ const UPGRADE_PACKAGE = 'dsh-skill-mcp';
  * @returns {{supported: boolean, reason: string, spec: string|null, canRestart: boolean}} 判定结果。
  */
 function upgradePlan({ service, hint, bundle }) {
-  const hasMethod = !!service && typeof service[UPGRADE_METHOD] === 'function';
-  if (!hasMethod) return { supported: false, reason: 'no-service', spec: null };
-  if (!hint?.updateAvailable || !hint?.latest) return { supported: false, reason: 'up-to-date', spec: null };
-  // 本地安装形态（link:/file:/github:/tarball）不归 installBundle 管：拿 npm spec 覆盖会把
-  // 用户的本地开发链接换成 npm 包，那是破坏而不是升级。只认 registry 来源。
-  const source = typeof bundle?.source === 'string' ? bundle.source : '';
-  const isRegistry = source === '' || /^\d|^\^|^~|^latest$/.test(source);
-  if (!isRegistry) return { supported: false, reason: 'not-npm', spec: null };
-  return {
-    supported: true,
-    reason: 'ok',
-    // 带 ^：与 profile 里已有的前缀风格一致（实测 pnpm 沿用原 spec 前缀，不会因这次调用
-    // 把 `^1.4.2` 改成精确的 `1.4.2`，所以用户不会因此失去 `dsh plugin update` 的自动升级）。
-    spec: `${UPGRADE_PACKAGE}@^${hint.latest}`,
-    // 目标版本随判定一起带出来：升级完成后 updateHint 会被宿主刷成「已是最新」，
-    // 那时就没有版本可显示了，必须在这里记住。
-    version: hint.latest,
-  };
+  // 这个包随桌面源码发布。覆盖安装会把它换成 npm 包，所以任何来源都不提供一键升级。
+  void service;
+  void hint;
+  void bundle;
+  return { supported: false, reason: 'source-maintained', spec: null };
 }
 
 /**
@@ -4721,10 +4701,12 @@ function upgradeFailureText(error, exitCode, output) {
 }
 
 function whatsNewFor(current, lastSeen, entries) {
-  if (!current || !Array.isArray(entries) || entries.length === 0) return [];
-  if (lastSeen === current) return [];
-  const index = entries.findIndex((entry) => entry.version === lastSeen);
-  return index >= 0 ? entries.slice(index + 1) : entries.filter((entry) => entry.version === current);
+  // 这个包随桌面源码发布。打开面板不再把插件自己的版本说明当成一次「更新」：
+  // 新装和另一台电脑都没有「看过」记录，原先会因此弹一次。发版说明由桌面自己决定。
+  void current;
+  void lastSeen;
+  void entries;
+  return [];
 }
 
 // 自带 RPC 与状态：面板只管「在这儿渲染一个」。它挂在面板里，就自然随面板挂载/卸载——

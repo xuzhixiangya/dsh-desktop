@@ -6628,14 +6628,10 @@ function clearTemplateFavoritesMemo() {
 }
 //#endregion
 //#region src/updater.ts
-/** GitHub Release discovery and explicit, user-triggered plugin updates. */
+/** This copy ships with the desktop source. It does not query or install a published release. */
 /** Keep this in sync with package.json for each published release. */
 const CURRENT_VERSION = PLUGIN_VERSION;
 const PACKAGE_NAME = "@dickpy/dsh-imagegen";
-const RELEASES_URL = "https://api.github.com/repos/dickpy/dsh-imagegen/releases/latest";
-const CHECK_TIMEOUT_MS = 1e4;
-const CACHE_TTL_MS = 15 * 6e4;
-let cached;
 /** Compare stable semver triples; returns positive when `left` is newer. */
 function compareVersions(left, right) {
 	const parse = (value) => {
@@ -6655,42 +6651,14 @@ function compareVersions(left, right) {
 	const b = parse(right);
 	return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
 }
-function normalizedReleaseVersion(tag) {
-	if (typeof tag !== "string" || !/^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(tag.trim())) return void 0;
-	return tag.trim().replace(/^v/, "");
-}
-/** Read the latest stable GitHub Release, with a short host-side cache. */
-async function checkForUpdate(fetchFn = fetch, now = Date.now()) {
-	if (cached !== void 0 && cached.expiresAt > now) return cached.value;
-	const response = await fetchFn(RELEASES_URL, {
-		headers: {
-			accept: "application/vnd.github+json",
-			"user-agent": "dsh-imagegen-update-check"
-		},
-		signal: AbortSignal.timeout(CHECK_TIMEOUT_MS)
-	});
-	if (!response.ok) throw new Error(`GitHub Releases returned HTTP ${response.status}`);
-	const payload = await response.json();
-	if (payload === null || typeof payload !== "object") throw new Error("GitHub Releases returned malformed JSON");
-	const release = payload;
-	if (release.draft === true || release.prerelease === true) throw new Error("latest GitHub Release is not stable");
-	const latestVersion = normalizedReleaseVersion(release.tag_name);
-	if (latestVersion === void 0) throw new Error("latest GitHub Release has an invalid version tag");
-	const releaseUrl = typeof release.html_url === "string" ? release.html_url : "https://github.com/dickpy/dsh-imagegen/releases";
-	const releaseNotes = typeof release.body === "string" ? release.body.trim() : "";
-	const value = {
+/** Report the installed source version. A published release must not replace this copy. */
+function checkForUpdate() {
+	return Promise.resolve({
 		currentVersion: CURRENT_VERSION,
-		latestVersion,
-		updateAvailable: compareVersions(latestVersion, CURRENT_VERSION) > 0,
-		releaseUrl,
-		...typeof release.published_at === "string" ? { publishedAt: release.published_at } : {},
-		...releaseNotes === "" ? {} : { releaseNotes: releaseNotes.slice(0, 2e4) }
-	};
-	cached = {
-		expiresAt: now + CACHE_TTL_MS,
-		value
-	};
-	return value;
+		latestVersion: CURRENT_VERSION,
+		updateAvailable: false,
+		releaseUrl: "https://github.com/dickpy/dsh-imagegen/releases"
+	});
 }
 /** Resolve the profile that launched the current DSH process. */
 function profileFromProcess(argv = process.argv, env = process.env) {
@@ -6702,32 +6670,13 @@ function profileFromProcess(argv = process.argv, env = process.env) {
 	if (argv.includes("web")) return "web";
 	return "web";
 }
-/** Run the same official command documented for plugin installation. */
-function installUpdate(version, spawnFn = spawn, argv = process.argv, env = process.env) {
+/** Refuse a release install. The next desktop build carries the maintained source. */
+function installUpdate(version) {
 	if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) return Promise.reject(/* @__PURE__ */ new Error("invalid update version"));
-	const profile = profileFromProcess(argv, env);
-	const child = spawnFn(process.platform === "win32" ? "dsh.cmd" : "dsh", [
-		"plugin",
-		"--profile",
-		profile,
-		"add",
-		`${PACKAGE_NAME}@${version}`
-	], {
-		shell: process.platform === "win32",
-		stdio: "ignore"
-	});
-	return new Promise((resolve, reject) => {
-		child.once("error", reject);
-		child.once("exit", (code, signal) => {
-			if (code === 0) resolve();
-			else reject(/* @__PURE__ */ new Error(signal === null ? `plugin update exited with code ${code ?? "unknown"}` : `plugin update terminated by ${signal}`));
-		});
-	});
+	return Promise.reject(/* @__PURE__ */ new Error("dsh-imagegen is maintained with the desktop source and cannot be replaced from a release"));
 }
-/** Test helper: clear the host-side Release cache. */
-function clearUpdateCache() {
-	cached = void 0;
-}
+/** Kept for callers that used to clear the release cache. There is no cache. */
+function clearUpdateCache() {}
 //#endregion
 //#region src/presets.ts
 /**
@@ -7792,40 +7741,11 @@ function makeRoutes(deps) {
 			path: UPDATE_API.apply,
 			handler: async (req, res) => {
 				if (!guard(req, res, "POST")) return;
-				const body = await readJsonBody(req);
-				const version = body !== void 0 && typeof body.version === "string" ? body.version.trim() : "";
-				if (version === "") {
-					writeJson(res, 200, {
-						ok: false,
-						code: "bad-request",
-						message: "update version is required"
-					});
-					return;
-				}
-				try {
-					const latest = await checkForUpdate();
-					if (!latest.updateAvailable || latest.latestVersion !== version) {
-						writeJson(res, 200, {
-							ok: false,
-							code: "update-not-available",
-							message: `version ${version} is not the latest available release`
-						});
-						return;
-					}
-					await installUpdate(version);
-					writeJson(res, 200, {
-						ok: true,
-						currentVersion: CURRENT_VERSION,
-						updatedVersion: version,
-						restartRequired: true
-					});
-				} catch (error) {
-					writeJson(res, 200, {
-						ok: false,
-						code: "update-failed",
-						message: messageOf$2(error)
-					});
-				}
+				writeJson(res, 200, {
+					ok: false,
+					code: "update-not-available",
+					message: "dsh-imagegen is maintained with the desktop source and is not updated from a release"
+				});
 			}
 		},
 		...deps.subscriptions === void 0 ? [] : [{

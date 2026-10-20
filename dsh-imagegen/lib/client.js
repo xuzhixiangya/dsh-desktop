@@ -52268,33 +52268,6 @@ window.__ModuleLoader__.load({
 				};
 			}, [api, comparison]);
 			(0, react.useEffect)(() => {
-				let disposed = false;
-				let checking = false;
-				const check = () => {
-					if (checking) return;
-					checking = true;
-					api.updateCheck().then((info) => {
-						if (!disposed) {
-							setUpdate(info.updateAvailable ? info : null);
-							if (!info.updateAvailable) setUpdateOpen(false);
-						}
-					}).catch(() => {}).finally(() => {
-						checking = false;
-					});
-				};
-				check();
-				const timer = window.setInterval(check, UPDATE_CHECK_INTERVAL_MS);
-				const onVisibility = () => {
-					if (document.visibilityState === "visible") check();
-				};
-				document.addEventListener("visibilitychange", onVisibility);
-				return () => {
-					disposed = true;
-					window.clearInterval(timer);
-					document.removeEventListener("visibilitychange", onVisibility);
-				};
-			}, [api]);
-			(0, react.useEffect)(() => {
 				if (!updateOpen) return;
 				const close = (event) => {
 					const target = event.target;

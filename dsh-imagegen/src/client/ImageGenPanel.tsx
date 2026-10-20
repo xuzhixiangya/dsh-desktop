@@ -16,7 +16,6 @@ import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import type { ImageGenApi } from './api.ts'
 import { errorMessage, tt } from './helpers.ts'
-import { renderMarkdown } from './markdown.tsx'
 import { openImageGenConfig } from './config-entry.tsx'
 import { TemplateLibrary } from './TemplateLibrary.tsx'
 import { GooeyNav } from './GooeyNav.tsx'
@@ -24,7 +23,7 @@ import { InspirationGallery } from './InspirationGallery.tsx'
 import { CanvasWorkspace } from './CanvasWorkspace.tsx'
 import { ModelPicker, resolveModelChoice, type ModelPickerValue } from './ModelPicker.tsx'
 import { useImageGenLanguageTick } from './use-language.ts'
-import type { DiagnosticEntry, EcommerceRefRole, GeneratedImage, GenerateMode, GenerateRequest, GenerationTask, GenerationTaskStatus, GenerationTaskSummary, HistoryEntry, HistoryImageRef, ProductSetDraft, ProductSetSlot, UpdateInfo } from '../protocol.ts'
+import type { DiagnosticEntry, EcommerceRefRole, GeneratedImage, GenerateMode, GenerateRequest, GenerationTask, GenerationTaskStatus, GenerationTaskSummary, HistoryEntry, HistoryImageRef, ProductSetDraft, ProductSetSlot } from '../protocol.ts'
 import { AGENT_IMAGE_API, SUBSCRIPTION_API, SUBSCRIPTION_PROVIDERS, type SubscriptionProvider } from '../protocol.ts'
 import type { ImageGenConfig, ImageGenScope, ImageModelGroup } from './settings-scope.ts'
 import { imageModelOptions } from './settings-scope.ts'
@@ -43,9 +42,6 @@ import css from './panel.module.css'
 const SIZES = ['auto', '1:1', '3:4', '4:3', '9:16', '2:3', '3:2', '16:9', '21:9'] as const
 
 /** Size option keys in the locale dictionary. */
-/** Re-check Releases while the panel stays open; the host caches for 15 minutes. */
-const UPDATE_CHECK_INTERVAL_MS = 30 * 60_000
-
 const SIZE_KEYS: Record<string, 'size.auto' | 'size.square' | 'size.portrait34' | 'size.landscape43' | 'size.portrait916' | 'size.portrait23' | 'size.landscape32' | 'size.wide169' | 'size.ultrawide21'> = {
   auto: 'size.auto',
   '1:1': 'size.square',
@@ -671,12 +667,6 @@ export function ImageGenPanel(props: {
   const [preview, setPreview] = useState<{ images: GeneratedImage[]; index: number } | null>(null)
   const [previewScale, setPreviewScale] = useState(1)
   const [promptCopied, setPromptCopied] = useState(false)
-  const [update, setUpdate] = useState<UpdateInfo | null>(null)
-  const [updating, setUpdating] = useState(false)
-  const [updateMessage, setUpdateMessage] = useState<string | null>(null)
-  const [updateResult, setUpdateResult] = useState<'success' | 'failed' | null>(null)
-  const [updateOpen, setUpdateOpen] = useState(false)
-  const updateAreaRef = useRef<HTMLSpanElement>(null)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [tasks, setTasks] = useState<GenerationTask[]>([])
   const tasksRef = useRef<GenerationTask[]>([])
@@ -967,64 +957,6 @@ export function ImageGenPanel(props: {
     const timer = window.setInterval(refresh, 1500)
     return () => { disposed = true; window.clearInterval(timer) }
   }, [api, comparison])
-
-  // Release checks are host-mediated and intentionally best-effort: a GitHub
-  // outage must never make the image-generation studio unavailable. The host
-  // caches successful checks, while this timer/focus path picks up new Releases.
-  useEffect(() => {
-    let disposed = false
-    let checking = false
-    const check = (): void => {
-      if (checking) return
-      checking = true
-      api.updateCheck()
-        .then(info => {
-          if (!disposed) {
-            setUpdate(info.updateAvailable ? info : null)
-            if (!info.updateAvailable) setUpdateOpen(false)
-          }
-        })
-        .catch(() => { /* update discovery is optional */ })
-        .finally(() => { checking = false })
-    }
-    check()
-    const timer = window.setInterval(check, UPDATE_CHECK_INTERVAL_MS)
-    const onVisibility = (): void => { if (document.visibilityState === 'visible') check() }
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => {
-      disposed = true
-      window.clearInterval(timer)
-      document.removeEventListener('visibilitychange', onVisibility)
-    }
-  }, [api])
-
-  useEffect(() => {
-    if (!updateOpen) return
-    const close = (event: PointerEvent): void => {
-      const target = event.target
-      if (target instanceof Node && updateAreaRef.current?.contains(target) === true) return
-      setUpdateOpen(false)
-    }
-    window.addEventListener('pointerdown', close, true)
-    return () => window.removeEventListener('pointerdown', close, true)
-  }, [updateOpen])
-
-  const applyUpdate = async (): Promise<void> => {
-    if (update === null || updating) return
-    setUpdating(true)
-    setUpdateMessage(null)
-    setUpdateResult(null)
-    try {
-      const result = await api.updateApply(update.latestVersion)
-      setUpdateMessage(tt('update.success', { version: result.updatedVersion }))
-      setUpdateResult('success')
-    } catch {
-      setUpdateMessage(tt('update.failed'))
-      setUpdateResult('failed')
-    } finally {
-      setUpdating(false)
-    }
-  }
 
   const openSettingsGuide = (kind: 'generation' | 'enhancement' | 'disabled'): void => {
     setConfigGuide(kind)
@@ -2091,43 +2023,6 @@ export function ImageGenPanel(props: {
           >
             <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
           </a>
-          {update !== null ? (
-            <span ref={updateAreaRef} className={css.updateArea}>
-              <button
-                type="button"
-                className={css.updateButton}
-                data-kind={updateResult === 'failed' ? 'failed' : updateResult === 'success' ? 'ok' : 'available'}
-                aria-haspopup="dialog"
-                aria-expanded={updateOpen}
-                title={tt('update.available', { version: update.latestVersion })}
-                onClick={() => { setUpdateOpen(open => !open) }}
-              >
-                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M8 2.5v7" /><path d="M5.5 7L8 9.5 10.5 7" /><path d="M3 11.5v1A1.5 1.5 0 0 0 4.5 14h7a1.5 1.5 0 0 0 1.5-1.5v-1" /></svg>
-                {tt('update.button', { version: update.latestVersion })}
-              </button>
-              {updateOpen ? (
-                <section className={css.updatePopover} role="dialog" aria-label={tt('update.title')}>
-                  <header className={css.updatePopoverHeader}>
-                    <span className={css.updatePopoverHeading}>
-                      <strong>{tt('update.title')}</strong>
-                      <small>{tt('update.available', { version: update.latestVersion })}</small>
-                    </span>
-                    <button type="button" className={css.updateClose} aria-label={tt('update.close')} title={tt('update.close')} onClick={() => { setUpdateOpen(false) }}>×</button>
-                  </header>
-                  {updateMessage !== null ? <div className={css.updateStatus} data-kind={updateResult === 'failed' ? 'failed' : 'ok'}>{updateMessage}</div> : null}
-                  <div className={css.updateNotes}>
-                    {update.releaseNotes !== undefined && update.releaseNotes.trim() !== '' ? renderMarkdown(update.releaseNotes) : <p>{tt('update.noNotes')}</p>}
-                  </div>
-                  <footer className={css.updatePopoverFooter}>
-                    <a className={css.updateRelease} href={update.releaseUrl} target="_blank" rel="noreferrer">{tt('update.release')}</a>
-                    <Button variant="primary" size="sm" disabled={updating || updateResult === 'success'} onClick={() => { void applyUpdate() }}>
-                      {updating ? tt('update.installing') : updateResult === 'success' ? tt('update.installed') : tt('update.install')}
-                    </Button>
-                  </footer>
-                </section>
-              ) : null}
-            </span>
-          ) : null}
         </span>
         <GooeyNav
           ariaLabel={tt('workspace.label')}

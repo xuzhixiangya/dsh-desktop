@@ -55,43 +55,34 @@ const service = { installBundle() {} }
 const hint = (latest, current = '1.4.2') => ({ current, latest, updateAvailable: !!latest && latest !== current })
 const npmBundle = { name: 'dsh-skill-mcp', source: '^1.4.2', installed: true, version: '1.4.2' }
 
-test('an upgrade is offered only when the host can do it and there is a newer version', () => {
+test('an upgrade is never offered because this package is maintained from source', () => {
   const { upgradePlan } = loadUpgradeRule()
-  // 正常情形：宿主有 pluginManager + 是 npm 装的 + 有新版本。
-  const ok = upgradePlan({ service, hint: hint('1.5.0'), bundle: npmBundle })
-  assert.equal(ok.supported, true)
-  assert.equal(ok.spec, 'dsh-skill-mcp@^1.5.0', '用 caret 请求，与 profile 里的前缀风格一致')
-
-  // 宿主没提供这个 namespace（老宿主 / 非 web 形态）：不能给按钮，否则点了没反应。
-  assert.equal(upgradePlan({ service: null, hint: hint('1.5.0'), bundle: npmBundle }).reason, 'no-service')
-  assert.equal(upgradePlan({ service: {}, hint: hint('1.5.0'), bundle: npmBundle }).reason, 'no-service')
-  // 已是最新：不显示按钮。
-  assert.equal(upgradePlan({ service, hint: hint(null), bundle: npmBundle }).reason, 'up-to-date')
+  const plan = upgradePlan({ service, hint: hint('1.5.0'), bundle: npmBundle })
+  assert.equal(plan.supported, false)
+  assert.equal(plan.reason, 'source-maintained')
+  assert.equal(plan.spec, null)
+  assert.equal(upgradePlan({ service: null, hint: hint('1.5.0'), bundle: npmBundle }).supported, false)
+  assert.equal(upgradePlan({ service, hint: hint(null), bundle: npmBundle }).supported, false)
   assert.equal(upgradePlan({ service, hint: hint('1.4.2', '1.4.2'), bundle: npmBundle }).supported, false)
 })
 
-test('a locally linked install is never upgraded into an npm package', () => {
+test('neither a registry spec nor a local link can replace the source copy', () => {
   const { upgradePlan } = loadUpgradeRule()
-  // 这是最危险的一种：用户用 link:/file:/github: 装来做开发，拿 npm spec 覆盖会把他的
-  // 本地链接换成一个 npm 包——那是破坏，不是升级。必须拒绝，并且理由要能解释给用户。
   for (const source of [
     'link:D:/sudy/github/dsh-mcp-manager-ui',
     'file:C:/tmp/dsh-mcp-manager-ui-1.5.0.tgz',
     'github:Imzl-zl/dsh-mcp-manager-ui#v1.5.0',
     'workspace:*',
+    '^1.4.2',
+    '1.4.2',
+    '~1.4.2',
+    'latest',
+    '',
   ]) {
     const plan = upgradePlan({ service, hint: hint('1.5.0'), bundle: { ...npmBundle, source } })
-    assert.equal(plan.supported, false, `${source} 不该被允许一键升级`)
-    assert.equal(plan.reason, 'not-npm')
+    assert.equal(plan.supported, false, `${source || '(空 source)'} 不该被允许一键升级`)
+    assert.equal(plan.reason, 'source-maintained')
     assert.equal(plan.spec, null)
-  }
-  // 反向：npm 的几种写法都该放行（范围、精确、latest）。
-  for (const source of ['^1.4.2', '1.4.2', '~1.4.2', 'latest', '']) {
-    assert.equal(
-      upgradePlan({ service, hint: hint('1.5.0'), bundle: { ...npmBundle, source } }).supported,
-      true,
-      `${source || '(空 source)'} 应可升级`,
-    )
   }
 })
 
