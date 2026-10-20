@@ -126,6 +126,18 @@ describe('Desktop package overlay', () => {
     })
   })
 
+  it('keeps the Desktop source of company plugins that are maintained in this repository', () => {
+    for (const name of ['dsh-skill-mcp', '@linxin666/dsh-client-ui-task-board', '@dickpy/dsh-imagegen']) {
+      const state = fixture()
+      installPackage(state.install, name, '1.0.0')
+      installPackage(state.profile, name, '9.9.9')
+      expect(resolveOverlayPackage(name, state.options).selected).toMatchObject({
+        source: 'install',
+        version: '1.0.0',
+      })
+    }
+  })
+
   it('orders prereleases and keeps Desktop on equal precedence', () => {
     const prerelease = fixture()
     installPackage(prerelease.install, 'plugin', '1.0.0-rc.1')

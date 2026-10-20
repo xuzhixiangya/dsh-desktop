@@ -7,6 +7,15 @@ import { fileURLToPath } from 'node:url'
 import { compare, valid } from 'semver'
 
 const BIN_NAME = 'dsh-plugin-desktop'
+/**
+ * These plugins are edited in this repository and shipped inside Desktop.
+ * A newer copy installed into the Profile must not replace that source.
+ */
+const SOURCE_MAINTAINED_PACKAGES = new Set([
+  '@dickpy/dsh-imagegen',
+  '@linxin666/dsh-client-ui-task-board',
+  'dsh-skill-mcp',
+])
 const MAX_MANIFEST_BYTES = 1024 * 1024
 const MAX_VERSION_LENGTH = 128
 
@@ -145,15 +154,17 @@ export function findOverlayPackage(
     return { packageName, selected: install, install }
   }
   if (install === undefined && profile === undefined) return
-  const selected = install === undefined
-    ? profile!
-    : profile === undefined
-      ? install
-      // Equal SemVer precedence, including build-only differences, keeps the
-      // Desktop copy as the deterministic tie-break. A missing or non-SemVer
-      // version on either side is not comparable and also keeps Desktop.
-      : profile.version !== undefined && install.version !== undefined
-        && compare(profile.version, install.version) > 0 ? profile : install
+  const selected = install !== undefined && SOURCE_MAINTAINED_PACKAGES.has(packageName)
+    ? install
+    : install === undefined
+      ? profile!
+      : profile === undefined
+        ? install
+        // Equal SemVer precedence, including build-only differences, keeps the
+        // Desktop copy as the deterministic tie-break. A missing or non-SemVer
+        // version on either side is not comparable and also keeps Desktop.
+        : profile.version !== undefined && install.version !== undefined
+          && compare(profile.version, install.version) > 0 ? profile : install
   return {
     packageName,
     selected,
