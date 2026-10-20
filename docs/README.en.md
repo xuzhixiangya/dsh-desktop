@@ -1,8 +1,8 @@
-# DSH Desktop Documentation
+# Silverstar documentation
 
 [中文文档](README.md)
 
-This directory is the product and developer documentation index for DSH Desktop. The root [`README.en.md`](../README.en.md) is the short product entry point; these pages explain why the project exists, how to use it, and how to build plugins for it. Want to contribute? See [Contributing](../CONTRIBUTING.en.md).
+This directory is the developer documentation index for Silverstar. The product overview is the root [`README.en.md`](../README.en.md). These pages keep the architecture and plugin notes. Want to contribute? See [Contributing](../CONTRIBUTING.en.md).
 
 ## Read by goal
 
