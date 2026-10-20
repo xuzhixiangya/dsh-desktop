@@ -78,20 +78,38 @@ export async function clearYxApiKey(remote: YxSettingsRemote): Promise<void> {
   forgetYxAccount()
 }
 
-/** Username shown in the sidebar. Null when this profile has no saved gateway key. */
+let accountEpoch = 0
+const accountListeners = new Set<(name: string | null) => void>()
+
+/**
+ * Username shown in the sidebar. Null when this profile has no saved gateway key.
+ * A login or sign-out that lands while this check is waiting wins: the first
+ * install leaves the sidebar mounted before onboarding finishes, and a late
+ * "no key" answer must not wipe the account that login just stored.
+ */
 export async function confirmYxAccount(remote: YxSettingsRemote): Promise<string | null> {
+  const epoch = accountEpoch
   const describe = remote.credentials.describe
   if (describe !== undefined) {
     const described = await describe([YX_API_KEY_REF])
-    if (!described.ok) return rememberedYxAccount() ?? await accountNameFromSettings(remote)
+    if (accountEpoch !== epoch) return rememberedYxAccount()
+    if (!described.ok) {
+      const remembered = rememberedYxAccount()
+      if (remembered !== null) return remembered
+      const stored = await accountNameFromSettings(remote)
+      if (accountEpoch !== epoch) return rememberedYxAccount()
+      return stored
+    }
     if (described.value[YX_API_KEY_REF]?.configured !== true) {
       forgetYxAccount()
       return null
     }
   }
+  if (accountEpoch !== epoch) return rememberedYxAccount()
   const remembered = rememberedYxAccount()
   if (remembered !== null) return remembered
   const stored = await accountNameFromSettings(remote)
+  if (accountEpoch !== epoch) return rememberedYxAccount()
   if (stored !== null) rememberYxAccount(stored)
   return stored
 }
@@ -103,14 +121,32 @@ export function rememberedYxAccount(): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value : null
 }
 
+/** Changes when a login or sign-out replaces the sidebar account. */
+export function yxAccountEpoch(): number {
+  return accountEpoch
+}
+
+/** Hear the account the moment login or sign-out stores it, including from onboarding. */
+export function subscribeYxAccount(listener: (name: string | null) => void): () => void {
+  accountListeners.add(listener)
+  return () => { accountListeners.delete(listener) }
+}
+
+function publishAccount(name: string | null): void {
+  accountEpoch += 1
+  for (const listener of [...accountListeners]) listener(name)
+}
+
 export function rememberYxAccount(username: string): void {
   const name = username.trim()
   if (name.length === 0) return
   accountStorage()?.setItem(YX_ACCOUNT_STORAGE_KEY, name)
+  publishAccount(name)
 }
 
 export function forgetYxAccount(): void {
   accountStorage()?.removeItem(YX_ACCOUNT_STORAGE_KEY)
+  publishAccount(null)
 }
 
 function accountStorage(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | undefined {

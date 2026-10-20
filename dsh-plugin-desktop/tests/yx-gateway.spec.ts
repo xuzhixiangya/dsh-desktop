@@ -11,7 +11,7 @@ import {
   YxGatewayError,
 } from '../src/yx-gateway.ts'
 import { adoptYxChatModel, readYxChatSessions } from '../src/client/yx-chat-model.ts'
-import { applyYxLogin, confirmYxAccount, defaultYxModelIds, ensureYxDefaultModel, ensureYxResponsesProtocol, rememberedYxAccount, saveYxProvider, sessionShouldUseYxGateway, type YxSettingsRemote } from '../src/client/yx-provider.ts'
+import { applyYxLogin, confirmYxAccount, defaultYxModelIds, ensureYxDefaultModel, ensureYxResponsesProtocol, forgetYxAccount, rememberedYxAccount, rememberYxAccount, saveYxProvider, sessionShouldUseYxGateway, subscribeYxAccount, type YxSettingsRemote } from '../src/client/yx-provider.ts'
 
 const ORIGIN = 'http://127.0.0.1:3000'
 const KEY = 'a'.repeat(48)
@@ -455,6 +455,92 @@ it('remembers the account name after login and clears it when the key is gone', 
   remote.credentials.describe = async () => ({ ok: true, value: { [YX_API_KEY_REF]: { configured: false } } })
   await expect(confirmYxAccount(remote)).resolves.toBeNull()
   expect(rememberedYxAccount()).toBeNull()
+  vi.unstubAllGlobals()
+})
+
+it('keeps a login that finishes while the sidebar is still checking the key', async () => {
+  const values = new Map<string, string>()
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => { values.set(key, value) },
+    removeItem: (key: string) => { values.delete(key) },
+  })
+  let release: (value: RemoteResult<Readonly<Record<string, { readonly configured?: boolean }>>>) => void = () => {}
+  const described = new Promise<RemoteResult<Readonly<Record<string, { readonly configured?: boolean }>>>>(resolve => { release = resolve })
+  const remote: YxSettingsRemote = {
+    settings: {
+      async describe(): Promise<RemoteResult<SettingsDescribeValue>> {
+        return { ok: true, value: { writable: true, hasDocument: true, namespaces: [{
+          autoGenerate: false, ns: YX_PROVIDER_NAMESPACE, schema: null, value: {}, applies: 'live', secrets: [], revision: 2,
+          user: { providers: { [YX_PROVIDER_ROUTE]: { accountName: 'yxadmin', models: [{ id: 'kept', name: 'kept' }] } } },
+        }] } }
+      },
+      async mutate(): Promise<RemoteResult<SettingsNamespaceView>> { throw new Error('unused') },
+    },
+    credentials: {
+      async set(): Promise<RemoteResult<void>> { return { ok: true, value: undefined } },
+      async unset(): Promise<RemoteResult<void>> { return { ok: true, value: undefined } },
+      describe: () => described,
+    },
+  }
+  const pending = confirmYxAccount(remote)
+  rememberYxAccount('yxadmin')
+  release({ ok: true, value: { [YX_API_KEY_REF]: { configured: false } } })
+  await expect(pending).resolves.toBe('yxadmin')
+  expect(rememberedYxAccount()).toBe('yxadmin')
+  vi.unstubAllGlobals()
+})
+
+it('does not restore an account signed out while the key check is still running', async () => {
+  const values = new Map<string, string>([['dsh.yx.account', 'yxadmin']])
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => { values.set(key, value) },
+    removeItem: (key: string) => { values.delete(key) },
+  })
+  let release: (value: RemoteResult<Readonly<Record<string, { readonly configured?: boolean }>>>) => void = () => {}
+  const described = new Promise<RemoteResult<Readonly<Record<string, { readonly configured?: boolean }>>>>(resolve => { release = resolve })
+  const remote: YxSettingsRemote = {
+    settings: {
+      async describe(): Promise<RemoteResult<SettingsDescribeValue>> {
+        return { ok: true, value: { writable: true, hasDocument: true, namespaces: [{
+          autoGenerate: false, ns: YX_PROVIDER_NAMESPACE, schema: null, value: {}, applies: 'live', secrets: [], revision: 2,
+          user: { providers: { [YX_PROVIDER_ROUTE]: { accountName: 'yxadmin', models: [{ id: 'kept', name: 'kept' }] } } },
+        }] } }
+      },
+      async mutate(): Promise<RemoteResult<SettingsNamespaceView>> { throw new Error('unused') },
+    },
+    credentials: {
+      async set(): Promise<RemoteResult<void>> { return { ok: true, value: undefined } },
+      async unset(): Promise<RemoteResult<void>> { return { ok: true, value: undefined } },
+      describe: () => described,
+    },
+  }
+  const pending = confirmYxAccount(remote)
+  forgetYxAccount()
+  release({ ok: true, value: { [YX_API_KEY_REF]: { configured: true } } })
+  await expect(pending).resolves.toBeNull()
+  expect(rememberedYxAccount()).toBeNull()
+  vi.unstubAllGlobals()
+})
+
+it('tells an open sidebar when the account is stored or cleared', () => {
+  const values = new Map<string, string>()
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => { values.set(key, value) },
+    removeItem: (key: string) => { values.delete(key) },
+  })
+  const seen: Array<string | null> = []
+  const stop = subscribeYxAccount(name => { seen.push(name) })
+  try {
+    rememberYxAccount('yxadmin')
+    forgetYxAccount()
+  } finally {
+    stop()
+  }
+  rememberYxAccount('later')
+  expect(seen).toEqual(['yxadmin', null])
   vi.unstubAllGlobals()
 })
 

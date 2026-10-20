@@ -17,6 +17,8 @@ import {
   clearYxApiKey,
   confirmYxAccount,
   rememberedYxAccount,
+  subscribeYxAccount,
+  yxAccountEpoch,
   type YxSettingsRemote,
 } from './yx-provider.ts'
 
@@ -43,9 +45,13 @@ export function YxAccountMenu({
   const [dialog, setDialog] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)
   const [account, setAccount] = useState<string | null>(() => rememberedYxAccount())
+  useEffect(() => subscribeYxAccount(setAccount), [])
   useEffect(() => {
     let cancelled = false
-    void confirmYxAccount(remote).then(name => { if (!cancelled) setAccount(name) })
+    const epoch = yxAccountEpoch()
+    void confirmYxAccount(remote).then(name => {
+      if (!cancelled && yxAccountEpoch() === epoch) setAccount(name)
+    })
     return () => { cancelled = true }
   }, [remote])
   const signedIn = account !== null
