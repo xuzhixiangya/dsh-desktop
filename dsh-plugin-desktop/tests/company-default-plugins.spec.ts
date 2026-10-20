@@ -1,9 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   COMPANY_DEFAULT_PLUGINS,
+  companyPluginSeedReady,
   mirrorGithubInstallSpec,
   seedCompanyDefaultPlugins,
 } from '../src/company-default-plugins.ts'
@@ -52,6 +53,15 @@ afterEach(() => {
 })
 
 describe('company default plugins', () => {
+  it('waits to install until setup and account login have released the profile manifest', () => {
+    const ready = { safeMode: false, setupPending: false, accountPending: false, relaunching: false }
+    expect(companyPluginSeedReady(ready)).toBe(true)
+    expect(companyPluginSeedReady({ ...ready, setupPending: true })).toBe(false)
+    expect(companyPluginSeedReady({ ...ready, accountPending: true })).toBe(false)
+    expect(companyPluginSeedReady({ ...ready, relaunching: true })).toBe(false)
+    expect(companyPluginSeedReady({ ...ready, safeMode: true })).toBe(false)
+  })
+
   it('sends GitHub repositories through the mirror and leaves npm specs unchanged', () => {
     expect(mirrorGithubInstallSpec('github:xuzhixiangya/dsh-deep-research')).toBe(
       'git+https://gh-proxy.com/https://github.com/xuzhixiangya/dsh-deep-research.git',
@@ -183,6 +193,62 @@ describe('company default plugins', () => {
       install: async () => { throw new Error('should not retry') },
     })
     expect(manifest(dir).dependencies['billion-context']).toBeUndefined()
+  })
+
+  it('stops when the app closes and retries the unfinished plugin next time', async () => {
+    const dir = profileDir()
+    const controller = new AbortController()
+    const installer = rememberInstall(dir)
+    const logs: string[] = []
+    await seedCompanyDefaultPlugins({
+      profileDir: dir,
+      profileName: 'desktop',
+      appExecutable: '/app',
+      dshBootstrapPath: '/bootstrap',
+      homeDir: '/home',
+      nodeBinDir: '/node',
+      nodeShimPath: '/node/node',
+      pnpmBinDir: '/pnpm',
+      electronVersion: '1.2.3',
+      plugins: [
+        { name: 'dsh-better-sidebar', spec: 'dsh-better-sidebar@0.26.0', enabled: true },
+        { name: 'billion-context', spec: 'billion-context@0.1.197', enabled: true },
+      ],
+      signal: controller.signal,
+      install: async spec => {
+        if (spec.startsWith('billion-context')) {
+          controller.abort()
+          throw new Error('The operation was aborted')
+        }
+        await installer.install(spec)
+      },
+      log: message => { logs.push(message) },
+    })
+    expect(manifest(dir).dependencies['dsh-better-sidebar']).toBe('dsh-better-sidebar@0.26.0')
+    expect(logs.some(line => line.includes('billion-context stopped because the app is closing'))).toBe(true)
+    const receipt = readFileSync(join(dir, 'company-default-plugins.json'), 'utf8')
+    expect(receipt).not.toContain('billion-context')
+    expect(receipt).not.toContain('failed')
+
+    installer.specs.length = 0
+    await seedCompanyDefaultPlugins({
+      profileDir: dir,
+      profileName: 'desktop',
+      appExecutable: '/app',
+      dshBootstrapPath: '/bootstrap',
+      homeDir: '/home',
+      nodeBinDir: '/node',
+      nodeShimPath: '/node/node',
+      pnpmBinDir: '/pnpm',
+      electronVersion: '1.2.3',
+      plugins: [
+        { name: 'dsh-better-sidebar', spec: 'dsh-better-sidebar@0.26.0', enabled: true },
+        { name: 'billion-context', spec: 'billion-context@0.1.197', enabled: true },
+      ],
+      install: installer.install,
+    })
+    expect(installer.specs).toEqual(['billion-context@0.1.197'])
+    expect(existsSync(join(dir, 'company-default-plugins.json'))).toBe(true)
   })
 
   it('does not install when the seed receipt cannot be trusted', async () => {

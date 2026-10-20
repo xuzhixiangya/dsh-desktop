@@ -1,4 +1,8 @@
-/** Install the company plugin set once per Profile. A later uninstall stays removed. */
+/**
+ * Install the company plugin set once per Profile, after setup has finished
+ * writing the profile manifest. A later uninstall stays removed. Plugins
+ * installed during a session load on the next launch.
+ */
 
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
@@ -44,7 +48,7 @@ interface CompanyDefaultPluginReceipt {
   packages: Record<string, SeedStatus>
 }
 
-/** Launcher paths used to run `dsh plugin add` before the Host starts. */
+/** Launcher paths used to run `dsh plugin add` without blocking the open window. */
 export interface CompanyDefaultPluginSeedOptions extends Omit<RecoveryPluginUninstallOptions, 'packageName'> {
   readonly plugins?: readonly CompanyDefaultPlugin[]
   readonly mirror?: string
@@ -184,6 +188,23 @@ async function addProfilePlugin(
 }
 
 /**
+ * Whether background plugin installation may take the profile manifest lock.
+ *
+ * `dsh plugin add` holds `package.json.lock` for the whole pnpm run. Setup
+ * finish and account login write that same manifest and only wait two seconds,
+ * so seeding while either is still in progress fails the wizard. A process
+ * that is about to relaunch must not start an install it will abort.
+ */
+export function companyPluginSeedReady(input: {
+  readonly safeMode: boolean
+  readonly setupPending: boolean
+  readonly accountPending: boolean
+  readonly relaunching: boolean
+}): boolean {
+  return !input.safeMode && !input.setupPending && !input.accountPending && !input.relaunching
+}
+
+/**
  * Offer each company plugin once. An install failure is recorded and skipped.
  * A plugin removed after a successful seed is not installed again.
  */
@@ -206,7 +227,12 @@ export async function seedCompanyDefaultPlugins(options: CompanyDefaultPluginSee
   }
   const plugins = options.plugins ?? COMPANY_DEFAULT_PLUGINS
   const install = options.install ?? (async spec => { await addProfilePlugin({ ...options, spec }) })
+  const closing = (): boolean => options.signal?.aborted === true
   for (const plugin of plugins) {
+    if (closing()) {
+      log('company default plugins: stopped because the app is closing')
+      return
+    }
     if (receipt.packages[plugin.name] !== undefined) continue
     try {
       const names = dependencyNames(options.profileDir)
@@ -238,6 +264,10 @@ export async function seedCompanyDefaultPlugins(options: CompanyDefaultPluginSee
       }
       writeReceipt(options.profileDir, receipt)
     } catch (cause) {
+      if (closing()) {
+        log(`company default plugins: ${plugin.name} stopped because the app is closing`)
+        return
+      }
       receipt.packages[plugin.name] = 'failed'
       log(`company default plugins: ${plugin.name} was skipped: ${cause instanceof Error ? cause.message : String(cause)}`)
       try {

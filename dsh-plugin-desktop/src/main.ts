@@ -184,7 +184,7 @@ import {
   materializeProfile,
   ProfileMaterializationError,
 } from './profile-materializer.ts'
-import { seedCompanyDefaultPlugins } from './company-default-plugins.ts'
+import { companyPluginSeedReady, seedCompanyDefaultPlugins } from './company-default-plugins.ts'
 import {
   formatRecoveryPluginRemoveFailure,
   removeRecoveryPlugin,
@@ -1298,26 +1298,6 @@ async function start(): Promise<void> {
       await shutdown.request(recoveryResult === 'restart' || recoveryResult === 'safe-mode' ? 0 : 1)
       return
     }
-    if (safeModePaths === undefined) {
-      try {
-        await seedCompanyDefaultPlugins({
-          appExecutable: process.execPath,
-          dshBootstrapPath,
-          profileName: activeProfileName,
-          profileDir: activeProfileDir,
-          homeDir,
-          nodeBinDir: pnpmRuntime.nodeBinDir,
-          nodeShimPath: pnpmRuntime.nodeShimPath,
-          pnpmBinDir: pnpmRuntime.pathDir,
-          electronVersion,
-          log: message => { electronLogger.info(`${BIN_NAME}: ${message}`) },
-        })
-      } catch (cause) {
-        electronLogger.error(
-          `${BIN_NAME}: company default plugins were skipped: ${cause instanceof Error ? cause.message : String(cause)}`,
-        )
-      }
-    }
     startupStage = 'profile-composition'
     lifecycleRecorder.transitionStartupStage(startupStage)
     const lanAddresses = desktopLanAddresses()
@@ -1468,6 +1448,39 @@ async function start(): Promise<void> {
       market: marketSelection.requested, aaEnabled: profilePreferences?.aaEnabled === true }
     let setupSaving = false
     let setupRestartPending = false
+    let companyPluginSeedStarted = false
+    // Plugin install holds the profile manifest lock for the whole pnpm run.
+    // Start it only after setup and account login have finished writing that file.
+    const startCompanyPluginSeed = (relaunching = false): void => {
+      if (companyPluginSeedStarted || !companyPluginSeedReady({
+        safeMode: safeModePaths !== undefined,
+        setupPending,
+        accountPending: safeModePaths === undefined
+          && desktopSetupAccountPending(marketUserDataDir, prepared.profile.dir),
+        relaunching,
+      })) return
+      companyPluginSeedStarted = true
+      const companyPluginSeed = new AbortController()
+      generation.own(() => { companyPluginSeed.abort() })
+      void seedCompanyDefaultPlugins({
+        appExecutable: process.execPath,
+        dshBootstrapPath,
+        profileName: activeProfileName,
+        profileDir: activeProfileDir,
+        homeDir,
+        nodeBinDir: pnpmRuntime.nodeBinDir,
+        nodeShimPath: pnpmRuntime.nodeShimPath,
+        pnpmBinDir: pnpmRuntime.pathDir,
+        electronVersion,
+        signal: companyPluginSeed.signal,
+        log: message => { electronLogger.info(`${BIN_NAME}: ${message}`) },
+      }).catch((cause: unknown) => {
+        if (companyPluginSeed.signal.aborted) return
+        electronLogger.error(
+          `${BIN_NAME}: company default plugins were skipped: ${cause instanceof Error ? cause.message : String(cause)}`,
+        )
+      })
+    }
     runtime.setupOnboarding = {
       read: async () => ({ required: setupPending, edition: 'desktop', profile: activeProfileName,
         restartPending: setupRestartPending,
@@ -1476,6 +1489,7 @@ async function start(): Promise<void> {
       dismissAccount: async profile => {
         if (setupPending || profile !== activeProfileName || safeModePaths !== undefined) throw new Error('Desktop account setup is unavailable')
         dismissDesktopSetupAccount(marketUserDataDir, prepared.profile.dir)
+        startCompanyPluginSeed()
       },
       applyPending: async profile => {
         if (setupPending || setupSaving || profile !== activeProfileName || safeModePaths !== undefined
@@ -1517,11 +1531,23 @@ async function start(): Promise<void> {
           await completeOrSkipDesktopSetupWizard(marketUserDataDir, prepared.profile.dir,
             selection === undefined ? 'skipped' : 'completed', setupWizardVersions)
           setupPending = false
-          // Shell choices are already in the live profile. Login continues in
-          // this same window; a restart prompt here only blocks the account
-          // the employee just saved. Market and remote-control choices apply
-          // the next time the app is opened.
+          // Window mode and notifications are already live. The plugin market
+          // and remote control belong to the host that started before this
+          // wizard, so a different choice opens a new process before login.
+          // Leave no restart prompt for the employee to click.
+          const nextGenerationNeeded = selection !== undefined && (
+            selection.market !== prepared.market.effective
+            || (selection.aaEnabled === true) !== prepared.aaEnabled
+          )
           setupRestartPending = false
+          if (nextGenerationNeeded) {
+            setImmediate(() => {
+              nativeExit.requestRelaunch(desktopDefaultRelaunchArguments())
+              void shutdown.request(0)
+            })
+          } else {
+            startCompanyPluginSeed()
+          }
         } finally { setupSaving = false }
       },
     }
@@ -1925,6 +1951,7 @@ async function start(): Promise<void> {
       )
     }
     lifecycleRecorder.completeStartup(startupStage, rendererReport)
+    startCompanyPluginSeed()
     // Only a renderer that reached a healthy boot can take a workspace, so the
     // hand-off is released here rather than beside the mount: a startup that
     // ended in the recovery route must not also try to open a folder.
