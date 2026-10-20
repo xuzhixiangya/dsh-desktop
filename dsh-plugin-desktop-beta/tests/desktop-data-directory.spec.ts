@@ -152,7 +152,7 @@ describe('Desktop DSH data directory', () => {
     expect(existsSync(join(existingTarget, 'settings.yaml'))).toBe(false)
     assertDesktopDataDirectoryCommandGeneration(userData, existingTarget, 1)
     expect(() => assertDesktopDataDirectoryCommandGeneration(userData, source, 0)).toThrow(
-      'older DSH data directory',
+      'older data directory',
     )
   })
 
@@ -200,7 +200,7 @@ describe('Desktop DSH data directory', () => {
     await selectDesktopDataDirectory(userData, initial, emptyTarget)
     rmSync(emptyTarget, { recursive: true })
     expect(() => resolveDesktopDataDirectory(userData, source, 'default')).toThrow(
-      'configured DSH home is unavailable',
+      'configured data directory is unavailable',
     )
   })
 

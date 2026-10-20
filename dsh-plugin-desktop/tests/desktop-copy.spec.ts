@@ -37,7 +37,7 @@ describe('Desktop product copy', () => {
     expect(copy.rollbackCheckpoint).toBe('恢复此检查点')
     expect(copy.back).toBe('返回')
     const confirmation = copy.confirmRollbackBody('2026/8/25 10:00:00')
-    for (const scope of ['2026/8/25 10:00:00', 'Profile', 'settings.yaml', 'DSH 数据目录补丁']) expect(confirmation).toContain(scope)
+    for (const scope of ['2026/8/25 10:00:00', 'Profile', 'settings.yaml', '数据目录补丁']) expect(confirmation).toContain(scope)
     expect(copy.safeModeBody).toContain('原有数据会保留')
     expect(copy.safeModeBody).toContain('下次正常启动时会自动清理临时环境')
     expect(copy.safeModeActiveBody).toContain('配置操作仅针对临时环境')
@@ -62,9 +62,9 @@ describe('Desktop product copy', () => {
   it('ships localized native update and failure dialogs', () => {
     const copy = desktopNativeCopy('zh')
     expect(copy.updateCheckFailedTitle).toBe('无法检查更新')
-    expect(copy.terminalErrorTitle).toBe('无法打开 DSH 终端')
+    expect(copy.terminalErrorTitle).toBe(`无法打开 ${DESKTOP_DISPLAY_NAME} 终端`)
     expect(copy.diagnosticsErrorTitle).toBe('无法导出诊断信息')
-    expect(copy.updateAvailableMessage('2.1.0')).toBe('DSH Desktop 2.1.0 已可用。')
+    expect(copy.updateAvailableMessage('2.1.0')).toBe(`${DESKTOP_DISPLAY_NAME} 2.1.0 已可用。`)
   })
 
   it('explains cross-channel Profile risk and routes users to Profile selection', () => {
@@ -72,21 +72,22 @@ describe('Desktop product copy', () => {
     expect(copy.profileCompatibilityMessage('work', 'DSH Desktop'))
       .toBe('当前 Profile“work”最后一次使用的桌面版本与当前版本不同：')
     expect(copy.profileCompatibilityDetail('2.0.4', '0.1.1-rc.2', 'DSH Desktop Beta', '2.0.5-beta.2', '0.1.2-alpha.5'))
-      .toBe('最后一次的桌面版/DSH 版本：2.0.4/0.1.1-rc.2\n当前的桌面版/DSH 版本：2.0.5-beta.2/0.1.2-alpha.5')
+      .toBe('最后一次的桌面版本：2.0.4/0.1.1-rc.2\n当前的桌面版本：2.0.5-beta.2/0.1.2-alpha.5')
     expect(copy.profileCompatibilityUnknownDetail('DSH Desktop Beta', '2.0.5-beta.2', '0.1.2-alpha.5'))
-      .toBe('最后一次的桌面版/DSH 版本：未知/未知\n当前的桌面版/DSH 版本：2.0.5-beta.2/0.1.2-alpha.5')
-    expect(copy.profileCompatibilityWarning).toBe('DSH 版本差异可能会导致：\n1. 历史会话信息加载出错；\n2. 当前 Profile 下的部分插件不兼容，甚至引发报错或崩溃。\n建议您切换到兼容的 Profile，或创建新的 Profile。')
+      .toBe('最后一次的桌面版本：未知/未知\n当前的桌面版本：2.0.5-beta.2/0.1.2-alpha.5')
+    expect(copy.profileCompatibilityWarning).toBe('版本差异可能会导致：\n1. 历史会话信息加载出错；\n2. 当前 Profile 下的部分插件不兼容，甚至引发报错或崩溃。\n建议您切换到兼容的 Profile，或创建新的 Profile。')
     expect(copy.switchProfile).toBe('切换 Profile')
   })
 })
 
 describe('Desktop recovery product name', () => {
-  it('renames the desktop app and leaves the DSH command line alone', () => {
+  it('uses the product name and does not show DSH in recovery copy', () => {
     const copy = desktopRecoveryCopy('zh')
     expect(copy.title).toBe(`${DESKTOP_DISPLAY_NAME} 恢复助手`)
     expect(copy.restart).toBe(`重启 ${DESKTOP_DISPLAY_NAME}`)
-    expect(copy.openTerminal).toBe('打开 DSH 终端')
-    expect(copy.dataGuideBody).toContain('DSH 数据目录')
+    expect(copy.openTerminal).toBe(`打开 ${DESKTOP_DISPLAY_NAME} 终端`)
+    expect(copy.dataGuideBody).toContain('数据目录')
+    expect(copy.dataGuideBody).not.toContain('DSH')
   })
 })
 

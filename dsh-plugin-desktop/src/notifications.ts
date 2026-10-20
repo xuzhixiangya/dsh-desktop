@@ -4,6 +4,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { DesktopLocale, DesktopNotification } from './runtime.ts'
 import { observeDesktopJobOutcomes, type DesktopJobOutcome } from './jobs-bridge.ts'
+import { brandDesktopCopy } from './desktop-brand.ts'
 import {
   bindDesktopNotificationSettings,
   DEFAULT_NOTIFICATION_SETTINGS,
@@ -30,7 +31,7 @@ export {
 
 type NotificationOutcome = 'turn-completed' | 'turn-failed' | 'job-completed' | 'job-failed' | 'schedule-completed' | 'schedule-failed'
 
-const NOTIFICATION_COPY: Record<DesktopLocale, Record<NotificationOutcome, DesktopNotification>> = {
+const NOTIFICATION_COPY: Record<DesktopLocale, Record<NotificationOutcome, DesktopNotification>> = brandDesktopCopy({
   en: {
     'turn-completed': { title: 'User Turn Completed', body: 'A user-initiated turn has finished.' },
     'turn-failed': { title: 'User Turn Failed', body: 'A user-initiated turn could not finish. Open DSH Desktop for details.' },
@@ -47,7 +48,7 @@ const NOTIFICATION_COPY: Record<DesktopLocale, Record<NotificationOutcome, Deskt
     'schedule-completed': { title: '自动化任务完成', body: '一个自动化任务已完成。' },
     'schedule-failed': { title: '自动化任务失败', body: '一个自动化任务未能完成，请打开 DSH Desktop 查看详情。' },
   },
-}
+})
 
 interface OpenTurn {
   readonly turn: number

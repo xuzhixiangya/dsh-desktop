@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react'
 import type { CompatibilityChromeBridge, CompatibilityChromeCommand, CompatibilityChromeState } from '../../compatibility-chrome-contract.ts'
 import { DesktopFrameTitlebarView } from '../../client/DesktopFrameTitlebarView.tsx'
 import { DESKTOP_DISPLAY_NAME } from '../../product-identity.ts'
+
+document.title = DESKTOP_DISPLAY_NAME
 import { en, zh } from '../../client/desktop-settings-locales.ts'
 import { installChromeOverlay } from './overlay.ts'
 

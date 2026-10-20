@@ -62,7 +62,7 @@ import {
   effectiveDesktopWindowMaterial,
   type DesktopWindowMaterial,
 } from './window-material.ts'
-import { DESKTOP_DISPLAY_NAME } from './product-identity.ts'
+import { DESKTOP_COMMAND_NAME, DESKTOP_DISPLAY_NAME } from './product-identity.ts'
 import {
   DESKTOP_ALTERNATE_WINDOW_MODES_ENABLED,
   presentedDesktopShellMode,
@@ -156,9 +156,9 @@ export function apply(ctx: Context, config: DesktopShellConfig): void {
   const runtime = ctx.get('desktopRuntime')
   if (runtime === undefined) {
     process.stderr.write(
-      'dsh-plugin-desktop: this profile is composed with the DSH Desktop shell, which requires the desktop launcher (desktopRuntime).\n'
-      + 'Start it with `dsh-desktop`, or select this profile inside the packaged DSH Desktop application.\n'
-      + 'The desktop terminal, profile, and update rows stay inactive in an ordinary DSH boot.\n',
+      `dsh-plugin-desktop: this profile is composed with the ${DESKTOP_DISPLAY_NAME} shell, which requires the desktop launcher (desktopRuntime).\n`
+      + `Start it with \`${DESKTOP_COMMAND_NAME}\`, or select this profile inside the packaged ${DESKTOP_DISPLAY_NAME} application.\n`
+      + 'The desktop terminal, profile, and update rows stay inactive until the desktop app starts.\n',
     )
     return
   }

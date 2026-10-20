@@ -1,5 +1,6 @@
 /** Desktop-owned native tray copy for the locales shipped by DSH. */
 
+import { brandDesktopCopy, brandDesktopText } from './desktop-brand.ts'
 import { DESKTOP_DISPLAY_NAME } from './product-identity.ts'
 import type { DesktopLocale } from './runtime.ts'
 import { desktopRecoveryCopy } from './recovery-copy.ts'
@@ -86,7 +87,7 @@ export interface DesktopRestartConfirmationCopy {
   readonly cancel: string
 }
 
-export const rendererRecoveryCopy: Record<DesktopLocale, DesktopRestartConfirmationCopy> = {
+export const rendererRecoveryCopy: Record<DesktopLocale, DesktopRestartConfirmationCopy> = brandDesktopCopy({
   en: {
     title: 'Restore DSH Desktop',
     message: 'The interface could not recover automatically.',
@@ -101,7 +102,7 @@ export const rendererRecoveryCopy: Record<DesktopLocale, DesktopRestartConfirmat
     confirm: '再次尝试恢复',
     cancel: '暂不处理',
   },
-}
+})
 
 const restartConfirmationCopy: Record<DesktopLocale, Record<'normal' | 'recovery', DesktopRestartConfirmationCopy>> = {
   en: {
@@ -166,7 +167,7 @@ export function desktopTrayLabel(
   key: DesktopTrayLabelKey,
   value = '',
 ): string {
-  return labels[locale][key](value)
+  return brandDesktopText(labels[locale][key](value))
 }
 
 /** Resolve the native privacy confirmation shown before diagnostics export. */

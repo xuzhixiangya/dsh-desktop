@@ -1,5 +1,6 @@
 /** Bilingual copy for the pre-Host native Setup Wizard. */
 
+import { brandDesktopCopy } from './desktop-brand.ts'
 import type { DesktopLocale } from './runtime.ts'
 import { DESKTOP_DISPLAY_NAME } from './product-identity.ts'
 
@@ -139,10 +140,10 @@ const COPY: Record<DesktopLocale, DesktopSetupWizardCopy> = {
     marketBody: 'Choose a plugin market for the current Profile. Only one can be enabled at a time.',
     marketDisabled: 'Turn off plugin market',
     marketDisabledBody: 'Do not load a plugin market interface.',
-    communityMarket: 'dsh-community-market',
+    communityMarket: 'Built-in market',
     communityMarketBody: `The open market built into ${DESKTOP_DISPLAY_NAME}, including custom data sources.`,
-    dshMarket: 'dsh-market',
-    dshMarketBody: 'The popular community market powered by awesome-dsh-plugin data.',
+    dshMarket: 'Community market',
+    dshMarketBody: 'A community plugin market.',
     notificationsTitle: 'Set up Desktop notifications',
     notificationsBody: 'Receive system notifications when tasks finish or fail. Notifications do not show conversation content.',
     notificationsEnabled: 'Enable Desktop notifications',
@@ -219,10 +220,10 @@ const COPY: Record<DesktopLocale, DesktopSetupWizardCopy> = {
     marketBody: '为当前 Profile 选择一个插件市场。一次只能启用一个。',
     marketDisabled: '关闭插件市场',
     marketDisabledBody: '不加载插件市场界面。',
-    communityMarket: 'dsh-community-market',
+    communityMarket: '内置市场',
     communityMarketBody: `${DESKTOP_DISPLAY_NAME} 内置的开放市场，并支持自定义数据源。`,
-    dshMarket: 'dsh-market',
-    dshMarketBody: '使用 awesome-dsh-plugin 数据的热门社区市场。',
+    dshMarket: '社区市场',
+    dshMarketBody: '社区插件市场。',
     notificationsTitle: '设置桌面通知',
     notificationsBody: '在任务完成或失败时接收系统通知。通知不会显示会话内容。',
     notificationsEnabled: '启用桌面通知',
@@ -247,5 +248,5 @@ const COPY: Record<DesktopLocale, DesktopSetupWizardCopy> = {
 }
 
 export function desktopSetupWizardCopy(locale: DesktopLocale): DesktopSetupWizardCopy {
-  return COPY[locale]
+  return brandDesktopCopy(COPY[locale])
 }

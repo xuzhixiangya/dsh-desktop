@@ -13,7 +13,7 @@ describe('Recovery native terminal action', () => {
       support: { href: 'https://github.com/anywhere-labs/dsh-desktop/issues', label: '联系我们', hint: '提供完整报错' },
     }))
     expect(markup).toContain('href="https://github.com/anywhere-labs/dsh-desktop/issues"')
-    expect(markup.indexOf('联系我们')).toBeLessThan(markup.indexOf('打开 DSH 终端'))
+    expect(markup.indexOf('联系我们')).toBeLessThan(markup.indexOf('打开 Silverstar 终端'))
     const source = readFileSync(new URL('../src/native-ui/recovery/App.tsx', import.meta.url), 'utf8')
     expect(source.indexOf('data-recovery-support')).toBeLessThan(source.indexOf('<Reason copy={copy}'))
     expect(source).toMatch(/className="[^"]*bg-amber-500\/10[^"]*text-amber-800 dark:text-amber-200" data-recovery-support/u)
@@ -78,7 +78,7 @@ describe('Recovery native terminal action', () => {
     expect(windows).not.toContain('right-3')
     for (const markup of [mac, windows]) {
       expect(markup).toContain('rounded-full')
-      expect(markup).toContain('Open DSH Terminal')
+      expect(markup).toContain('Open Silverstar Terminal')
       expect(markup).toContain('dsh-recovery://open-terminal')
     }
   })

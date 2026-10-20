@@ -31,7 +31,7 @@ Var pid
     ${endIf}
 
   dsh_installer_scoped_fallback:
-    ; The patched builder macros match DSH Desktop.exe, not every executable
+    ; The patched builder macros match the application executable, not every executable
     ; below $INSTDIR. They handle pre-handoff releases and stubborn processes.
     MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "$(appRunning)" /SD IDOK IDOK dsh_installer_stop_app
     Quit

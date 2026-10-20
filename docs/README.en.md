@@ -32,6 +32,7 @@ Ordinary users can start with the [user guide](user-guide.en.md) and never need 
 | [Architecture](architecture.en.md) | Electron, Host, the Web carrier, profiles, and packaging |
 | [Desktop service reference](../dsh-plugin-desktop/docs/plugin-services.md) | Stable `desktopProfiles` and `desktopPnpm` contracts with TypeScript examples |
 | [Package reference](../dsh-plugin-desktop/README.md) | Detailed build, runtime, release, and limitation notes |
+| [Packaging](packaging.zh.md) | How to produce a Mac disk image and a Windows installer that actually install (Chinese) |
 
 ## How the README files are organized
 

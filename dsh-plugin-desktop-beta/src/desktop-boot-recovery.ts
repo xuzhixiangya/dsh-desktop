@@ -1,6 +1,7 @@
 /** Desktop-only Recovery Mode action injected into the framework-free boot page. */
 
 import type { IndexInjection } from '@deepseek-ai/dsh-host-webserver'
+import { brandDesktopText } from './desktop-brand.ts'
 import { DESKTOP_RECOVERY_RESTART_PATH } from './desktop-settings-contract.ts'
 
 /** The bounded same-origin request used to restart into Recovery Mode. */
@@ -78,7 +79,7 @@ body[data-ds-dark-theme] [data-dsh-desktop-recovery] {
 `
 
 /** Preserve the upstream plugin-failure report and append Desktop recovery guidance. */
-export const DESKTOP_BOOT_RECOVERY_SCRIPT = `(() => {
+export const DESKTOP_BOOT_RECOVERY_SCRIPT = brandDesktopText(`(() => {
   const endpoint = ${JSON.stringify(DESKTOP_RECOVERY_RESTART_PATH)};
   const request = ${JSON.stringify(DESKTOP_RECOVERY_RESTART_REQUEST)};
   const label = '打开恢复模式 / Open Recovery Mode';
@@ -119,7 +120,7 @@ export const DESKTOP_BOOT_RECOVERY_SCRIPT = `(() => {
   };
   new MutationObserver(attach).observe(document.documentElement, { childList: true, subtree: true });
   attach();
-})();`
+})();`)
 
 /** Backwards-compatible names retained for downstream tests and embedders. */
 export const DESKTOP_BOOT_TERMINAL_STYLE = DESKTOP_BOOT_RECOVERY_STYLE

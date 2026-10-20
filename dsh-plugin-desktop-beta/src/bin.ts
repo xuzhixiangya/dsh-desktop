@@ -97,7 +97,7 @@ async function launchElectron(workspacePath?: string): Promise<number> {
       + `  npm install -g ${DESKTOP_PACKAGE_NAME}\n`
       + 'Or add electron to the profile before launching:\n'
       + '  dsh plugin --profile <name> add electron\n'
-      + 'Or use the packaged DSH Desktop application.\n',
+      + `Or use the packaged ${DESKTOP_DISPLAY_NAME} application.\n`,
     )
     return 1
   }

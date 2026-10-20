@@ -32,6 +32,7 @@
 | [架构说明](architecture.md) | Electron、Host、Web carrier、profile 和打包之间的关系 |
 | [Desktop service 参考](../dsh-plugin-desktop/docs/plugin-services.md) | `desktopProfiles`、`desktopPnpm` 的稳定 contract 和 TypeScript 示例 |
 | [包级参考](../dsh-plugin-desktop/README.md) | 完整的构建、运行、发布和已知限制 |
+| [打包说明](packaging.zh.md) | 打出能装进系统的 Mac 安装盘和 Windows 安装程序 |
 
 ## README 文件怎么分工
 

@@ -642,6 +642,7 @@ describe('published package surface', () => {
     expect(main).toContain('desktopSetupWizardPending(marketUserDataDir, prepared.profile.dir)')
     expect(main).toContain('!hasDesktopProfileUsageHistory(releaseUserDataLocations, prepared.profile.dir, activeProfileName)')
     expect(main).toContain("selection === undefined ? 'skipped' : 'completed'")
+    expect(main).toContain('selection.market !== prepared.market.effective')
     expect(main).toContain('profile !== activeProfileName || safeModePaths !== undefined')
     const client = readFileSync(new URL('src/client/onboarding.tsx', packageRoot), 'utf8')
     expect(client).toContain("ctx.slots.inject('onboarding.desktop.before'")
@@ -815,7 +816,7 @@ describe('published package surface', () => {
   it('fixes the installed application identity', () => {
     expect(workspaceManifest.version).toBeUndefined()
     expect(manifest.version).toBe('2.0.17')
-    expect(manifest.build?.productName).toBe('DSH Desktop')
+    expect(manifest.build?.productName).toBe('Silverstar')
     expect(manifest.build?.appId).toBe('ai.deepseek.dsh.desktop')
     expect(manifest.build?.asar).toBe(false)
     expect(manifest.build).not.toHaveProperty('asarUnpack')
@@ -859,7 +860,7 @@ describe('published package surface', () => {
       target: 'nsis',
       arch: ['x64'],
     }])
-    expect(manifest.build?.win?.artifactName).toBe('DSH-Desktop-${version}-${arch}-Portable.${ext}')
+    expect(manifest.build?.win?.artifactName).toBe('Silverstar-${version}-${arch}-Portable.${ext}')
     expect(manifest.build?.nsis).toEqual({
       include: 'installer.nsh',
       installerIcon: 'build/app-icon.ico',
@@ -874,10 +875,10 @@ describe('published package surface', () => {
       shortcutName: 'Silverstar',
       uninstallerIcon: 'build/app-icon.ico',
       useZip: false,
-      artifactName: 'DSH-Desktop-${version}-${arch}-Setup.${ext}',
+      artifactName: 'Silverstar-${version}-${arch}-Setup.${ext}',
     })
     expect(manifest.build?.linux?.icon).toBe('build/icons')
-    expect(manifest.build?.linux?.synopsis).toBe('Agentic coding desktop for the DeepSeek Harness')
+    expect(manifest.build?.linux?.synopsis).toBe('Silverstar')
     // Electron derives the window's WM_CLASS from the root desktopName, and
     // syncDesktopName names the installed entry after it. Without the pair,
     // WM_CLASS falls back to the npm package name while the entry advertises
@@ -949,7 +950,7 @@ describe('published package surface', () => {
         CFBundleAllowMixedLocalizations: true,
         CFBundleDisplayName: 'Silverstar',
         CFBundleDevelopmentRegion: 'en',
-        NSMicrophoneUsageDescription: 'DSH Desktop uses the microphone for voice input.',
+        NSMicrophoneUsageDescription: 'Silverstar uses the microphone for voice input.',
         CFBundleLocalizations: ['en', 'zh_CN'],
       },
       hardenedRuntime: true,
@@ -1188,9 +1189,12 @@ describe('published package surface', () => {
     expect(manifest.dependencies?.koffi).toBe('3.1.5')
     expect(workspaceManifest.resolutions).toMatchObject({
       'koffi@npm:^3.1.0': '3.1.5',
+      'koffi@npm:3.1.1': '3.1.5',
     })
     expect(lockfile).toContain('"koffi@npm:3.1.5":')
     expect(lockfile).toContain('@koromix/koffi-win32-x64@npm:3.1.5')
+    expect(lockfile).not.toContain('"koffi@npm:3.1.1":')
+    expect(lockfile).not.toContain('resolution: "koffi@npm:3.1.1"')
     expect(lockfile).not.toContain('"koffi@npm:3.1.4":')
     expect(lockfile).not.toContain('@koromix/koffi-win32-x64@npm:3.1.4')
   })

@@ -524,7 +524,7 @@ describe('Desktop native action presentation', () => {
     }))
 
     expect(markup.match(/dshDesktopTitlebarIconButton/g)).toHaveLength(3)
-    expect(markup).toContain('aria-label="Open DSH Terminal"')
+    expect(markup).toContain('aria-label="Open Silverstar Beta Terminal"')
     expect(markup).toContain('aria-label="Restart options"')
     expect(markup).toContain('aria-label="Developer options"')
   })
@@ -575,7 +575,7 @@ describe('Desktop native action presentation', () => {
       placement: 'settings',
     }))
 
-    expect(markup).toContain('Open DSH Terminal')
+    expect(markup).toContain('Open Silverstar Beta Terminal')
     expect(markup).toContain('Export Diagnostics')
     expect(markup).toContain('Restart')
     expect(markup).toContain('aria-haspopup="menu"')

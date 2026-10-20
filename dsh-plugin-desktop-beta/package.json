@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-desktop-beta",
   "version": "2.0.17-beta.2",
-  "description": "DSH Desktop Beta: an Electron shell composed as a DeepSeek Harness Cordis plugin",
+  "description": "Silverstar Beta: an Electron shell composed as a DeepSeek Harness Cordis plugin",
   "desktopName": "dsh-desktop-beta.desktop",
   "license": "MIT",
   "publishConfig": {
@@ -388,7 +388,7 @@
   },
   "build": {
     "appId": "ai.deepseek.dsh.desktop.beta",
-    "productName": "DSH Desktop Beta",
+    "productName": "Silverstar Beta",
     "asar": false,
     "npmRebuild": false,
     "afterPack": "./scripts/verify-packaged-runtime.ts",
@@ -419,7 +419,7 @@
       "!node_modules/fs-ext/build/**"
     ],
     "mac": {
-      "artifactName": "DSH-Desktop-Beta-${version}-${arch}.${ext}",
+      "artifactName": "Silverstar-Beta-${version}-${arch}.${ext}",
       "target": [
         "dir"
       ],
@@ -428,7 +428,7 @@
         "CFBundleAllowMixedLocalizations": true,
         "CFBundleDisplayName": "Silverstar Beta",
         "CFBundleDevelopmentRegion": "en",
-        "NSMicrophoneUsageDescription": "DSH Desktop Beta uses the microphone for voice input.",
+        "NSMicrophoneUsageDescription": "Silverstar Beta uses the microphone for voice input.",
         "CFBundleLocalizations": [
           "en",
           "zh_CN"
@@ -469,7 +469,7 @@
           ]
         }
       ],
-      "artifactName": "DSH-Desktop-Beta-${version}-${arch}-Portable.${ext}",
+      "artifactName": "Silverstar-Beta-${version}-${arch}-Portable.${ext}",
       "icon": "build/app-icon.ico",
       "asar": false
     },
@@ -485,7 +485,7 @@
       "differentialPackage": false,
       "shortcutName": "Silverstar Beta",
       "useZip": false,
-      "artifactName": "DSH-Desktop-Beta-${version}-${arch}-Setup.${ext}",
+      "artifactName": "Silverstar-Beta-${version}-${arch}-Setup.${ext}",
       "installerIcon": "build/app-icon.ico",
       "uninstallerIcon": "build/app-icon.ico"
     },
@@ -505,9 +505,9 @@
         }
       ],
       "icon": "build/icons",
-      "artifactName": "DSH-Desktop-Beta-${version}-${arch}.${ext}",
+      "artifactName": "Silverstar-Beta-${version}-${arch}.${ext}",
       "category": "Development",
-      "synopsis": "Agentic coding desktop for the DeepSeek Harness (Beta)",
+      "synopsis": "Silverstar Beta",
       "maintainer": "DeepSeek <dsh-desktop@deepseek.com>",
       "executableName": "dsh-desktop-beta",
       "syncDesktopName": true,

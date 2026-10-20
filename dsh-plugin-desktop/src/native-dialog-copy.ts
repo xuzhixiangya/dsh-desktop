@@ -1,5 +1,6 @@
 /** Localized copy for Desktop-owned native dialogs and notifications. */
 
+import { brandDesktopCopy } from './desktop-brand.ts'
 import type { DesktopLocale } from './runtime.ts'
 
 export interface DesktopNativeCopy {
@@ -238,5 +239,5 @@ const COPY: Record<DesktopLocale, DesktopNativeCopy> = {
 }
 
 export function desktopNativeCopy(locale: DesktopLocale): DesktopNativeCopy {
-  return COPY[locale]
+  return brandDesktopCopy(COPY[locale])
 }

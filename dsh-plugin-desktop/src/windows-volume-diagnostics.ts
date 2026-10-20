@@ -1,4 +1,5 @@
 import { dirname, parse, resolve } from 'node:path'
+import { DESKTOP_DISPLAY_NAME } from './product-identity.ts'
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 
@@ -101,7 +102,7 @@ function concernForPath(
     return {
       ...entry,
       ...info,
-      reason: `${info.fileSystem} does not provide the NTFS-style ACL and junction behavior DSH Desktop relies on`,
+      reason: `${info.fileSystem} does not provide the NTFS-style ACL and junction behavior ${DESKTOP_DISPLAY_NAME} relies on`,
     }
   }
   if (info.driveType === REMOVABLE_DRIVE) {

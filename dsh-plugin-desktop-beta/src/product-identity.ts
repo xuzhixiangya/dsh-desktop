@@ -3,7 +3,7 @@ export const DESKTOP_RELEASE_IDENTITIES = Object.freeze({
   stable: Object.freeze({
     releaseChannel: 'stable' as const,
     packageName: 'dsh-plugin-desktop',
-    productName: 'DSH Desktop',
+    productName: 'Silverstar',
     displayName: 'Silverstar',
     userDataDirectoryName: 'YX Desktop',
     commandName: 'yx-desktop',
@@ -13,7 +13,7 @@ export const DESKTOP_RELEASE_IDENTITIES = Object.freeze({
   beta: Object.freeze({
     releaseChannel: 'beta' as const,
     packageName: 'dsh-plugin-desktop-beta',
-    productName: 'DSH Desktop Beta',
+    productName: 'Silverstar Beta',
     displayName: 'Silverstar Beta',
     userDataDirectoryName: 'YX Desktop Beta',
     commandName: 'yx-desktop-beta',

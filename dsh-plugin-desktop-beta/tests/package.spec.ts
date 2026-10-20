@@ -117,7 +117,7 @@ describe('published package surface', () => {
   it('sets a distinct Beta process identity before taking the single-instance lock', () => {
     expect(productIdentity).toContain("packageName: 'dsh-plugin-desktop-beta'")
     expect(productIdentity).toContain("packageName: 'dsh-plugin-desktop'")
-    expect(productIdentity).toContain("productName: 'DSH Desktop Beta'")
+    expect(productIdentity).toContain("productName: 'Silverstar Beta'")
     expect(productIdentity).toContain("appId: 'ai.deepseek.dsh.desktop.beta'")
     expect(productIdentity).toContain('DESKTOP_PRODUCT_IDENTITY = DESKTOP_RELEASE_IDENTITIES.beta')
     expect(productIdentity).toContain('OTHER_DESKTOP_PRODUCT_IDENTITY = DESKTOP_RELEASE_IDENTITIES.stable')
@@ -693,6 +693,7 @@ describe('published package surface', () => {
     expect(main).toContain('desktopSetupWizardPending(marketUserDataDir, prepared.profile.dir)')
     expect(main).toContain('!hasDesktopProfileUsageHistory(releaseUserDataLocations, prepared.profile.dir, activeProfileName)')
     expect(main).toContain("selection === undefined ? 'skipped' : 'completed'")
+    expect(main).toContain('selection.market !== prepared.market.effective')
     expect(main).toContain('profile !== activeProfileName || safeModePaths !== undefined')
     const client = readFileSync(new URL('src/client/onboarding.tsx', packageRoot), 'utf8')
     expect(client).toContain("ctx.slots.inject('onboarding.desktop.before'")
@@ -873,7 +874,7 @@ describe('published package surface', () => {
     })
     expect(manifest.bin).not.toHaveProperty('dsh-desktop')
     expect(manifest.bin).not.toHaveProperty('dsh-plugin-desktop')
-    expect(manifest.build?.productName).toBe('DSH Desktop Beta')
+    expect(manifest.build?.productName).toBe('Silverstar Beta')
     expect(manifest.build?.appId).toBe('ai.deepseek.dsh.desktop.beta')
     expect(manifest.build?.asar).toBe(false)
     expect(manifest.build).not.toHaveProperty('asarUnpack')
@@ -910,7 +911,7 @@ describe('published package surface', () => {
     ])
     expect(manifest.build?.mac?.icon).toBe('build/app-icon.icon')
     expect(manifest.build?.dmg?.icon).toBe('build/app-icon.icns')
-    expect(manifest.build?.mac?.artifactName).toBe('DSH-Desktop-Beta-${version}-${arch}.${ext}')
+    expect(manifest.build?.mac?.artifactName).toBe('Silverstar-Beta-${version}-${arch}.${ext}')
     expect(manifest.build?.mac?.mergeASARs).toBe(false)
     expect(manifest.build?.mac?.signIgnore).toEqual(['\\.(?:pak|dat|wasm)$', '/Contents/Resources/runtime/(?:arm64|x64)/primary-runtime(?:/|$)'])
     expect(manifest.build?.win?.compression).toBe('normal')
@@ -919,7 +920,7 @@ describe('published package surface', () => {
       target: 'nsis',
       arch: ['x64'],
     }])
-    expect(manifest.build?.win?.artifactName).toBe('DSH-Desktop-Beta-${version}-${arch}-Portable.${ext}')
+    expect(manifest.build?.win?.artifactName).toBe('Silverstar-Beta-${version}-${arch}-Portable.${ext}')
     expect(manifest.build?.nsis).toEqual({
       include: 'installer.nsh',
       installerIcon: 'build/app-icon.ico',
@@ -934,10 +935,10 @@ describe('published package surface', () => {
       differentialPackage: false,
       shortcutName: 'Silverstar Beta',
       useZip: false,
-      artifactName: 'DSH-Desktop-Beta-${version}-${arch}-Setup.${ext}',
+      artifactName: 'Silverstar-Beta-${version}-${arch}-Setup.${ext}',
     })
     expect(manifest.build?.linux?.icon).toBe('build/icons')
-    expect(manifest.build?.linux?.synopsis).toBe('Agentic coding desktop for the DeepSeek Harness (Beta)')
+    expect(manifest.build?.linux?.synopsis).toBe('Silverstar Beta')
     // Electron derives the window's WM_CLASS from the root desktopName, and
     // syncDesktopName names the installed entry after it. Without the pair,
     // WM_CLASS falls back to the npm package name while the entry advertises
@@ -1015,7 +1016,7 @@ describe('published package surface', () => {
         CFBundleAllowMixedLocalizations: true,
         CFBundleDisplayName: 'Silverstar Beta',
         CFBundleDevelopmentRegion: 'en',
-        NSMicrophoneUsageDescription: 'DSH Desktop Beta uses the microphone for voice input.',
+        NSMicrophoneUsageDescription: 'Silverstar Beta uses the microphone for voice input.',
         CFBundleLocalizations: ['en', 'zh_CN'],
       },
       hardenedRuntime: true,
@@ -1267,9 +1268,12 @@ describe('published package surface', () => {
     expect(manifest.dependencies?.koffi).toBe('3.1.5')
     expect(workspaceManifest.resolutions).toMatchObject({
       'koffi@npm:^3.1.0': '3.1.5',
+      'koffi@npm:3.1.1': '3.1.5',
     })
     expect(lockfile).toContain('"koffi@npm:3.1.5":')
     expect(lockfile).toContain('@koromix/koffi-win32-x64@npm:3.1.5')
+    expect(lockfile).not.toContain('"koffi@npm:3.1.1":')
+    expect(lockfile).not.toContain('resolution: "koffi@npm:3.1.1"')
     expect(lockfile).not.toContain('"koffi@npm:3.1.4":')
     expect(lockfile).not.toContain('@koromix/koffi-win32-x64@npm:3.1.4')
   })

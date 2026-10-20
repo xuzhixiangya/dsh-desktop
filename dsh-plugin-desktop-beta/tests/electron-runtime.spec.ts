@@ -1015,7 +1015,7 @@ describe('Electron desktop runtime', () => {
 
     expect(electron.dialog.showMessageBox).toHaveBeenCalledWith(expect.objectContaining({
       type: 'error',
-      buttons: ['Restart DSH Desktop', 'Open DSH Terminal', 'Dismiss'],
+      buttons: ['Restart Silverstar Beta', 'Open Silverstar Beta Terminal', 'Dismiss'],
       defaultId: 0,
       cancelId: 2,
       detail: expect.stringContaining('0 / 0x00000000'),
@@ -1488,7 +1488,7 @@ describe('Electron desktop runtime', () => {
     expect(runtime.locale).toBe('zh')
     expect((electron.menuTemplates.at(-1) as Array<{ label?: string }>).map(item => item.label))
       .toEqual(expect.arrayContaining([
-        '打开 DSH Desktop',
+        '打开 Silverstar Beta',
         '退出',
       ]))
 
@@ -1496,7 +1496,7 @@ describe('Electron desktop runtime', () => {
     expect(runtime.locale).toBe('en')
     expect((electron.menuTemplates.at(-1) as Array<{ label?: string }>).map(item => item.label))
       .toEqual(expect.arrayContaining([
-        'Open DSH Desktop',
+        'Open Silverstar Beta',
         'Quit',
       ]))
 
@@ -1505,7 +1505,7 @@ describe('Electron desktop runtime', () => {
     expect(runtime.locale).toBe('zh')
     expect((electron.menuTemplates.at(-1) as Array<{ label?: string }>).map(item => item.label))
       .toEqual(expect.arrayContaining([
-        '打开 DSH Desktop',
+        '打开 Silverstar Beta',
         '退出',
       ]))
 
@@ -2084,7 +2084,7 @@ describe('Electron desktop runtime', () => {
 
     const labels = (electron.menuTemplates.at(-1) as Array<{ label?: string }>).map(item => item.label)
     expect(labels).toEqual([
-      'Open DSH Desktop', 'Reload Interface', undefined,
+      'Open Silverstar Beta', 'Reload Interface', undefined,
       'Earlier Tool', 'Later Tool', undefined,
       'Check for Updates…', undefined,
       'Quit',
@@ -2299,7 +2299,7 @@ describe('Electron desktop runtime', () => {
       expect(() => { runtime.openTerminal() }).not.toThrow()
       await vi.waitFor(() => { expect(electron.dialog.showMessageBox).toHaveBeenCalledWith(expect.objectContaining({
         type: 'error',
-        title: 'Unable to Open DSH Terminal',
+        title: 'Unable to Open Silverstar Beta Terminal',
         detail: 'cannot create launcher',
       })) })
 
@@ -2309,7 +2309,7 @@ describe('Electron desktop runtime', () => {
       runtime.openTerminal()
       await vi.waitFor(() => { expect(electron.dialog.showMessageBox).toHaveBeenLastCalledWith(expect.objectContaining({
         type: 'error',
-        title: 'Unable to Open DSH Terminal',
+        title: 'Unable to Open Silverstar Beta Terminal',
         detail: 'launcher exited with code 1',
       })) })
       expect(stderr).toHaveBeenCalledWith(expect.stringContaining('failed to open terminal'))
@@ -2344,7 +2344,7 @@ describe('Electron desktop runtime', () => {
       title: 'Plugin Load Failed',
       message: 'Some plugins could not be loaded.',
       detail: expect.stringContaining('dsh-vision-router'),
-      buttons: ['Open DSH Terminal', 'Restart DSH Desktop', 'Dismiss'],
+      buttons: ['Open Silverstar Beta Terminal', 'Restart Silverstar Beta', 'Dismiss'],
     }))
     const recoveryCalls = electron.dialog.showMessageBox.mock.calls as unknown as Array<[{ detail?: string }]>
     expect(recoveryCalls[0]?.[0].detail).toContain('vision_crop')
@@ -2614,7 +2614,7 @@ describe('Electron desktop runtime', () => {
     expect(electron.dialog.showMessageBox).toHaveBeenLastCalledWith(
       activeWindow,
       expect.objectContaining({
-        title: 'DSH Desktop Is Up to Date',
+        title: 'Silverstar Beta Is Up to Date',
         detail: 'Installed version: 2.0.0',
         buttons: ['OK'],
       }),
@@ -2664,7 +2664,7 @@ describe('Electron desktop runtime', () => {
     expect(electron.dialog.showMessageBox).toHaveBeenLastCalledWith(
       activeWindow,
       expect.objectContaining({
-        title: 'DSH Desktop Update Downloaded',
+        title: 'Silverstar Beta Update Downloaded',
         buttons: ['OK'],
       }),
     )

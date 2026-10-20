@@ -13,6 +13,7 @@ import { showDesktopDialog, showDesktopMessageBox } from './desktop-dialog-windo
 import { createDesktopLocalWindow } from './local-window-policy.ts'
 import type { DesktopLocale } from './runtime.ts'
 import { applicationNeedsReveal, revealApplication } from './electron-reveal.ts'
+import { DESKTOP_DISPLAY_NAME } from './product-identity.ts'
 import { desktopRestartConfirmationCopy } from './tray-locale.ts'
 import {
   desktopRecoveryCopy,
@@ -428,7 +429,7 @@ export class DesktopStartupRecoveryWindow {
         this.activeTab = 'diagnostics'
         shell.showItemInFolder(this.diagnosticPath)
       } else if (action.action === 'open-terminal') {
-        if (this.options.openTerminal === undefined) throw new Error('DSH Terminal is unavailable for this startup stage.')
+        if (this.options.openTerminal === undefined) throw new Error(`${DESKTOP_DISPLAY_NAME} Terminal is unavailable for this startup stage.`)
         await this.options.openTerminal()
       } else if (action.action === 'open-profile-creator') {
         this.activeTab = 'profiles'
@@ -472,7 +473,7 @@ export class DesktopStartupRecoveryWindow {
         }
       } else if (action.action === 'begin-change-data-directory') {
         this.activeTab = 'data'
-        if (this.options.dataActions === undefined) throw new Error('DSH data management is unavailable for this startup stage.')
+        if (this.options.dataActions === undefined) throw new Error('Data management is unavailable for this startup stage.')
         if (await this.confirmDataDirectoryChange()) {
           this.dataDirectoryEditing = true
           this.dataDirectoryDraft = undefined
@@ -480,7 +481,7 @@ export class DesktopStartupRecoveryWindow {
       } else if (action.action === 'restore-default-data-directory') {
         this.activeTab = 'data'
         const actions = this.options.dataActions
-        if (actions === undefined) throw new Error('DSH data management is unavailable for this startup stage.')
+        if (actions === undefined) throw new Error('Data management is unavailable for this startup stage.')
         if (actions.usingDefaultDirectory) return
         const createIfMissing = actions.defaultDirectoryMissing()
         if (await this.confirmRestoreDefaultDirectory(createIfMissing)) {
@@ -499,7 +500,7 @@ export class DesktopStartupRecoveryWindow {
         const actions = this.options.dataActions
         const window = this.window
         if (actions === undefined || window === undefined || window.isDestroyed()) {
-          throw new Error('DSH data management is unavailable for this startup stage.')
+          throw new Error('Data management is unavailable for this startup stage.')
         }
         const selected = await dialog.showOpenDialog(window, {
           title: copy.selectDataDirectory,
@@ -514,7 +515,7 @@ export class DesktopStartupRecoveryWindow {
         this.activeTab = 'data'
         const actions = this.options.dataActions
         if (actions === undefined || !this.dataDirectoryEditing) {
-          throw new Error('DSH data-directory change is not active.')
+          throw new Error('Data-directory change is not active.')
         }
         this.dataDirectoryDraft = action.path.trim()
         await this.runBusy(async () => {
@@ -528,7 +529,7 @@ export class DesktopStartupRecoveryWindow {
       } else if (action.action === 'factory-reset') {
         this.activeTab = 'data'
         const actions = this.options.dataActions
-        if (actions === undefined) throw new Error('DSH data management is unavailable for this startup stage.')
+        if (actions === undefined) throw new Error('Data management is unavailable for this startup stage.')
         if (await this.confirmFactoryReset(actions.currentDirectory)) {
           await this.runBusy(async () => { await actions.resetDirectory() })
           this.finish('restart')

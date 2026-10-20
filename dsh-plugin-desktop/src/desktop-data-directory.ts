@@ -15,7 +15,7 @@ import type { Stats } from 'node:fs'
 import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path'
 import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import { listDesktopProfiles } from './profile-manager.ts'
-import { DESKTOP_PACKAGE_NAME } from './product-identity.ts'
+import { DESKTOP_DISPLAY_NAME, DESKTOP_PACKAGE_NAME } from './product-identity.ts'
 
 const STATE_VERSION = 1
 const STATE_ROOT_DIRECTORY = 'data-directory'
@@ -199,8 +199,8 @@ function parseLocationState(text: string): DesktopDataDirectoryStateV1 {
   }
   return Object.freeze({
     version: STATE_VERSION,
-    activeHome: canonicalPath(value.activeHome, 'active DSH home'),
-    previousHome: value.previousHome === null ? null : canonicalPath(value.previousHome, 'previous DSH home'),
+    activeHome: canonicalPath(value.activeHome, 'active data directory'),
+    previousHome: value.previousHome === null ? null : canonicalPath(value.previousHome, 'previous data directory'),
     generation: value.generation as number,
     updatedAt: canonicalTimestamp(value.updatedAt, 'updatedAt'),
   })
@@ -234,13 +234,13 @@ export function resolveDesktopDataDirectory(
   const state = readDesktopDataDirectoryState(userDataDir)
   if (state === undefined) {
     return Object.freeze({
-      homeDir: canonicalPath(fallbackHome, 'fallback DSH home'),
+      homeDir: canonicalPath(fallbackHome, 'fallback data directory'),
       previousHome: null,
       generation: 0,
       source: fallbackSource,
     })
   }
-  assertRealDirectory(state.activeHome, 'source-unavailable', 'configured DSH home')
+  assertRealDirectory(state.activeHome, 'source-unavailable', 'configured data directory')
   return Object.freeze({
     homeDir: state.activeHome,
     previousHome: state.previousHome,
@@ -262,7 +262,7 @@ function contains(parent: string, child: string, platform: NodeJS.Platform): boo
   return suffix === '' || (suffix !== '..' && !suffix.startsWith(`..${sep}`) && !isAbsolute(suffix))
 }
 
-/** Report whether a directory already holds a Desktop-usable DSH home. */
+/** Report whether a directory already holds a Desktop-usable data directory. */
 export function validDesktopProfileExists(homeDir: string): boolean {
   const profilesDir = join(homeDir, 'profiles')
   const profilesInfo = existingInfo(profilesDir)
@@ -275,8 +275,8 @@ function resolvedTargetPaths(
   targetDirectory: string,
   platform: NodeJS.Platform = process.platform,
 ): { readonly source: string; readonly target: string } {
-  const source = canonicalPath(currentHome, 'current DSH home')
-  const target = canonicalPath(targetDirectory, 'target DSH home')
+  const source = canonicalPath(currentHome, 'current data directory')
+  const target = canonicalPath(targetDirectory, 'target data directory')
   const root = parse(target).root
   if (normalizedForComparison(target, platform) === normalizedForComparison(root, platform)
     || contains(source, target, platform) || contains(target, source, platform)) {
@@ -297,14 +297,14 @@ export function inspectDesktopDataDirectoryTarget(
 ): DesktopDataDirectoryTarget {
   signal?.throwIfAborted()
   const { target } = resolvedTargetPaths(currentHome, targetDirectory, platform)
-  assertRealDirectory(target, 'target-unavailable', 'target DSH home')
+  assertRealDirectory(target, 'target-unavailable', 'target data directory')
   signal?.throwIfAborted()
   const entries = readdirSync(target)
   if (entries.length === 0) return Object.freeze({ targetHome: target, kind: 'empty' })
   if (!validDesktopProfileExists(target)) {
     throw new DesktopDataDirectoryError(
       'target-invalid',
-      'a non-empty target must be an existing DSH data directory with a Desktop-compatible Profile',
+      'a non-empty target must be an existing data directory with a Desktop-compatible Profile',
     )
   }
   return Object.freeze({ targetHome: target, kind: 'existing' })
@@ -319,7 +319,7 @@ function assertCurrentLocation(
   if (state !== undefined && state.generation === expected.generation
     && normalizedForComparison(state.activeHome, process.platform)
       === normalizedForComparison(expected.homeDir, process.platform)) return
-  throw new DesktopDataDirectoryError('busy', 'the active DSH data directory changed while Recovery Assistant was open')
+  throw new DesktopDataDirectoryError('busy', 'the active data directory changed while Recovery Assistant was open')
 }
 
 /** Select a validated target atomically; no content is copied from or changed in the old directory. */
@@ -386,7 +386,7 @@ export function assertDesktopDataDirectoryCommandGeneration(
   }
   throw new DesktopDataDirectoryError(
     'busy',
-    'this managed terminal belongs to an older DSH data directory; reopen it from DSH Desktop',
+    `this managed terminal belongs to an older data directory; reopen it from ${DESKTOP_DISPLAY_NAME}`,
   )
 }
 

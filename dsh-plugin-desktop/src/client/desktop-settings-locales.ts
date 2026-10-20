@@ -1,8 +1,9 @@
 /** Desktop-owned settings copy. */
 
+import { brandDesktopCopy } from '../desktop-brand.ts'
 import { DESKTOP_DISPLAY_NAME } from '../product-identity.ts'
 
-export const zh = {
+const zhSource = {
   loggingTitle: '日志',
   developerLogging: '开发者日志',
   developerLoggingBody: '立即记录模型、工具、重试、HTTP、进程通信和界面诊断的元数据，不主动采集提示词、工具参数或响应正文；日志会随诊断 ZIP 导出。会话事件可按序号与官方 Session Log 对照。',
@@ -71,9 +72,9 @@ export const zh = {
   marketIntro: '选择一个插件市场。一次只能启用一个。',
   marketDisabled: '关闭插件市场',
   marketDisabledBody: '不加载插件市场界面。',
-  communityMarket: 'dsh-community-market',
+  communityMarket: '内置市场',
   communityMarketBody: `${DESKTOP_DISPLAY_NAME} 内置的开放插件市场，支持添加和选择自定义插件数据源。`,
-  dshMarket: 'dsh-market',
+  dshMarket: '社区市场',
   dshMarketBody: '社区热门的插件市场，数据来自',
   legacyMarketNotice: '从旧版升级后，插件市场会保持关闭，直到你在这里明确选择。',
   marketLoadFailed: '所选插件市场未能加载。请选择其他市场，或选择“重试加载”。',
@@ -130,9 +131,11 @@ export const zh = {
   scheduleFailure: '自动化任务失败',
 } as const
 
+export const zh = brandDesktopCopy(zhSource)
+
 export type DesktopSettingsLocaleKey = keyof typeof zh
 
-export const en: Record<DesktopSettingsLocaleKey, string> = {
+const enSource: Record<DesktopSettingsLocaleKey, string> = {
   loggingTitle: 'Logging',
   developerLogging: 'Developer logging',
   developerLoggingBody: 'Trace model, tool, retry, HTTP, IPC and UI metadata immediately. Prompts, tool arguments and response bodies are not collected by these observers. Logs are included in diagnostic ZIP exports. Match session events to the official Session Log by sequence number.',
@@ -201,9 +204,9 @@ export const en: Record<DesktopSettingsLocaleKey, string> = {
   marketIntro: 'Choose a plugin market. Only one can be enabled at a time.',
   marketDisabled: 'Turn off plugin market',
   marketDisabledBody: 'Do not load a plugin market interface.',
-  communityMarket: 'dsh-community-market',
+  communityMarket: 'Built-in market',
   communityMarketBody: `The open plugin market built into ${DESKTOP_DISPLAY_NAME}, with support for custom plugin data sources.`,
-  dshMarket: 'dsh-market',
+  dshMarket: 'Community market',
   dshMarketBody: 'A popular community plugin market powered by data from',
   legacyMarketNotice: 'After upgrading from an earlier version, the plugin market stays off until you explicitly choose one here.',
   marketLoadFailed: 'The selected plugin market could not load. Choose another market or select Retry loading.',
@@ -259,3 +262,5 @@ export const en: Record<DesktopSettingsLocaleKey, string> = {
   scheduleCompletion: 'Automation task completed',
   scheduleFailure: 'Automation task failed',
 }
+
+export const en: Record<DesktopSettingsLocaleKey, string> = brandDesktopCopy(enSource)

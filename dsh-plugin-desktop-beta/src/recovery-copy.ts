@@ -1,29 +1,8 @@
 /** Shared recovery copy used by the native page and its main-process actions. */
 
-import { DESKTOP_DISPLAY_NAME } from './product-identity.ts'
+import { brandDesktopCopy } from './desktop-brand.ts'
 import type { DesktopLocale } from './runtime.ts'
 import type { DesktopStartupRecoveryOperationStage } from './startup-recovery-controller.ts'
-
-/**
- * Replace the old desktop product name. Bare "DSH" is the DeepSeek command
- * line, including "DSH 终端" and the DSH data directory, so those stay.
- * The on-disk product name also stays, so existing app data is still found.
- */
-function brandText(value: string): string {
-  return value.replaceAll('DSH Desktop', DESKTOP_DISPLAY_NAME)
-}
-
-function brandValue(value: unknown): unknown {
-  if (typeof value === 'string') return brandText(value)
-  if (typeof value === 'function') {
-    return (...args: readonly unknown[]) => brandValue((value as (...inner: readonly unknown[]) => unknown)(...args))
-  }
-  if (Array.isArray(value)) return value.map(item => brandValue(item))
-  if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, brandValue(item)]))
-  }
-  return value
-}
 
 export type DesktopRecoveryTab = 'quick' | 'plugins' | 'rollback' | 'profiles' | 'data' | 'diagnostics'
 
@@ -499,5 +478,5 @@ const COPY: Record<DesktopLocale, DesktopRecoveryCopy> = {
 }
 
 export function desktopRecoveryCopy(locale: DesktopLocale): DesktopRecoveryCopy {
-  return brandValue(COPY[locale]) as DesktopRecoveryCopy
+  return brandDesktopCopy(COPY[locale])
 }

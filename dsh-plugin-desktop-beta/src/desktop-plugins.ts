@@ -20,6 +20,7 @@ import {
 import { withFileLock, writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import { assertDesktopProfileName } from './profile-manager.ts'
 import {
+  DESKTOP_DISPLAY_NAME,
   DESKTOP_PACKAGE_NAME,
   DESKTOP_PACKAGE_NAMES,
 } from './product-identity.ts'
@@ -594,7 +595,7 @@ export async function setDesktopProfileBundleSelected(
   if (!desktopPluginBundleMutable(packageName)) {
     throw new DesktopProfileSelectionError(
       'immutable-target',
-      `${BIN_NAME}: bundle ${JSON.stringify(packageName)} belongs to DSH Desktop and cannot be changed`,
+      `${BIN_NAME}: bundle ${JSON.stringify(packageName)} belongs to ${DESKTOP_DISPLAY_NAME} and cannot be changed`,
     )
   }
   const manifestPath = join(resolveProfileDir(bootstrap.profileName, bootstrap.homeDir), 'package.json')

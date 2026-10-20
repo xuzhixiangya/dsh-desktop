@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-desktop",
   "version": "2.0.17",
-  "description": "DSH Desktop: an Electron shell composed as a DeepSeek Harness Cordis plugin",
+  "description": "Silverstar: an Electron shell composed as a DeepSeek Harness Cordis plugin",
   "desktopName": "dsh-desktop.desktop",
   "license": "MIT",
   "publishConfig": {
@@ -378,7 +378,7 @@
   },
   "build": {
     "appId": "ai.deepseek.dsh.desktop",
-    "productName": "DSH Desktop",
+    "productName": "Silverstar",
     "asar": false,
     "afterPack": "./scripts/verify-packaged-runtime.ts",
     "afterAllArtifactBuild": "./scripts/verify-electron-fuses.ts",
@@ -416,7 +416,7 @@
         "CFBundleAllowMixedLocalizations": true,
         "CFBundleDisplayName": "Silverstar",
         "CFBundleDevelopmentRegion": "en",
-        "NSMicrophoneUsageDescription": "DSH Desktop uses the microphone for voice input.",
+        "NSMicrophoneUsageDescription": "Silverstar uses the microphone for voice input.",
         "CFBundleLocalizations": [
           "en",
           "zh_CN"
@@ -458,7 +458,7 @@
           ]
         }
       ],
-      "artifactName": "DSH-Desktop-${version}-${arch}-Portable.${ext}",
+      "artifactName": "Silverstar-${version}-${arch}-Portable.${ext}",
       "icon": "build/app-icon.ico"
     },
     "nsis": {
@@ -475,7 +475,7 @@
       "shortcutName": "Silverstar",
       "uninstallerIcon": "build/app-icon.ico",
       "useZip": false,
-      "artifactName": "DSH-Desktop-${version}-${arch}-Setup.${ext}"
+      "artifactName": "Silverstar-${version}-${arch}-Setup.${ext}"
     },
     "linux": {
       "target": [
@@ -493,9 +493,9 @@
         }
       ],
       "icon": "build/icons",
-      "artifactName": "DSH-Desktop-${version}-${arch}.${ext}",
+      "artifactName": "Silverstar-${version}-${arch}.${ext}",
       "category": "Development",
-      "synopsis": "Agentic coding desktop for the DeepSeek Harness",
+      "synopsis": "Silverstar",
       "maintainer": "DeepSeek <dsh-desktop@deepseek.com>",
       "executableName": "dsh-desktop",
       "syncDesktopName": true,
